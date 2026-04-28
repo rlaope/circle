@@ -78,7 +78,13 @@ def _builtin_cylinder(args: dict) -> "SceneNode":
 
 
 def _builtin_circle(args: dict) -> "SceneNode":
-    v, i, n = primitives.disk(_need_number(args, "radius", "Circle"))
+    radius = _need_number(args, "radius", "Circle")
+    tube = args.get("tube")
+    if tube is None:
+        tube = radius * 0.1
+    elif not isinstance(tube, (int, float)):
+        raise EvalError("Circle: 'tube' must be a number")
+    v, i, n = primitives.torus(radius, float(tube))
     return _make_leaf(v, i, n, args)
 
 

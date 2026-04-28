@@ -135,17 +135,48 @@ def cylinder(radius: float, height: float, segments: int = 32) -> Mesh:
     )
 
 
-def disk(radius: float, segments: int = 48) -> Mesh:
-    """A flat disk lying on the XZ plane (normal +Y)."""
-    verts: list[tuple[float, float, float]] = [(0.0, 0.0, 0.0)]
-    norms: list[tuple[float, float, float]] = [(0.0, 1.0, 0.0)]
-    for seg in range(segments + 1):
-        theta = 2 * math.pi * seg / segments
-        verts.append((radius * math.cos(theta), 0.0, radius * math.sin(theta)))
-        norms.append((0.0, 1.0, 0.0))
+def torus(
+    radius: float,
+    tube: float,
+    major_segments: int = 48,
+    minor_segments: int = 16,
+) -> Mesh:
+    """A 3D ring (torus) lying flat on the XZ plane.
+
+    `radius` is the distance from the centre of the torus to the centre
+    of the tube. `tube` is the radius of the tube itself. Default
+    `tube = radius * 0.1` gives a thin ring; larger values produce
+    chunkier 3D circles.
+    """
+    verts: list[tuple[float, float, float]] = []
+    norms: list[tuple[float, float, float]] = []
+    for i in range(major_segments + 1):
+        phi = 2 * math.pi * i / major_segments
+        cp, sp = math.cos(phi), math.sin(phi)
+        for j in range(minor_segments + 1):
+            theta = 2 * math.pi * j / minor_segments
+            ct, st = math.cos(theta), math.sin(theta)
+            # Normal points outward from the centre of the tube.
+            nx = ct * cp
+            ny = st
+            nz = ct * sp
+            verts.append((
+                (radius + tube * ct) * cp,
+                tube * st,
+                (radius + tube * ct) * sp,
+            ))
+            norms.append((nx, ny, nz))
+
     indices: list[int] = []
-    for seg in range(segments):
-        indices += [0, seg + 1, seg + 2]
+    stride = minor_segments + 1
+    for i in range(major_segments):
+        for j in range(minor_segments):
+            a = i * stride + j
+            b = a + 1
+            c = a + stride
+            d = c + 1
+            indices += [a, b, c, b, d, c]
+
     return (
         np.array(verts, dtype="f4"),
         np.array(indices, dtype="u4"),

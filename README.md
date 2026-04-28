@@ -39,13 +39,18 @@ scene {
 
 ## Built-in primitives (v0.1)
 
-| Name       | Required keyword args                  | Optional         |
-|------------|----------------------------------------|------------------|
-| `Cube`     | `width`, `height`, `depth`             | `position`, `color`, `rotation` |
-| `Sphere`   | `radius`                               | `position`, `color` |
-| `Cylinder` | `radius`, `height`                     | `position`, `color` |
-| `Circle`   | `radius`                               | `position`, `color` |
-| `Group`    | none — uses block body                 | `position`, `rotation` |
+| Name       | Required keyword args                  | Optional                                   |
+|------------|----------------------------------------|--------------------------------------------|
+| `Cube`     | `width`, `height`, `depth`             | `position`, `color`, `rotation`            |
+| `Sphere`   | `radius`                               | `position`, `color`                        |
+| `Cylinder` | `radius`, `height`                     | `position`, `color`, `rotation`            |
+| `Circle`   | `radius`                               | `tube` (default `radius * 0.1`), `position`, `color`, `rotation` |
+| `Group`    | none — uses block body                 | `position`, `rotation`                     |
+
+`Circle` is a true 3D ring (torus): `radius` is the distance from the
+centre of the ring to the centre of the tube, and `tube` is the radius
+of the tube. The window also draws a Matrix-style ground grid so you
+can see depth even before any scene content is added.
 
 All values use keyword arguments. Coordinates are tuples `(x, y, z)`.
 Colors are hex literals like `#ff5577`.

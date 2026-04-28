@@ -14,8 +14,8 @@ component Car {
 }
 
 scene {
-    // Ground disk so we have a horizon line.
-    Circle(radius=20, position=(0, 0, 0), color=#222233)
+    // The renderer already draws a Matrix-style ground grid; no need to
+    // place a floor primitive here.
 
     // The full car, made of two imported wheel pairs and three primitives.
     Car(position=(0, 0, 0))

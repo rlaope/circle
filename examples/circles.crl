@@ -1,0 +1,54 @@
+// circles.crl — a piece composed almost entirely of 3D Circles (tori).
+//
+// Run:  python -m circlelib run examples/circles.crl
+//
+// `Circle(radius=R, tube=t)` is now a true 3D ring: `radius` is the
+// distance from the centre of the ring to the centre of the tube, and
+// `tube` is how thick the tube is. Default tube = 10% of radius.
+
+component Bullseye {
+    // Concentric flat-lying tori with decreasing radius and rising slightly
+    // in Y so the rings stack like a layered pad.
+    Circle(radius=4.0, tube=0.10, position=(0, 0.05, 0), color=#ff3355)
+    Circle(radius=3.2, tube=0.10, position=(0, 0.10, 0), color=#ffffff)
+    Circle(radius=2.4, tube=0.10, position=(0, 0.15, 0), color=#ff3355)
+    Circle(radius=1.6, tube=0.10, position=(0, 0.20, 0), color=#ffffff)
+    Circle(radius=0.8, tube=0.10, position=(0, 0.25, 0), color=#ff3355)
+}
+
+component Tower {
+    // A vertical stack of fat 3D rings.
+    Circle(radius=2.0, tube=0.30, position=(0, 0.5, 0), color=#3aa0ff)
+    Circle(radius=1.7, tube=0.28, position=(0, 1.5, 0), color=#4ab0ff)
+    Circle(radius=1.4, tube=0.26, position=(0, 2.5, 0), color=#5ac0ff)
+    Circle(radius=1.1, tube=0.24, position=(0, 3.5, 0), color=#6ad0ff)
+    Circle(radius=0.8, tube=0.22, position=(0, 4.5, 0), color=#7ae0ff)
+}
+
+component CoinRing {
+    // A ring tilted to stand upright like a coin on its edge.
+    Circle(radius=1.0, tube=0.12, position=(0, 1, 0), rotation=(90, 0, 0), color=#ffd24a)
+}
+
+scene {
+    // A bullseye in the centre, sitting on the matrix grid.
+    Bullseye(position=(0, 0, 0))
+
+    // Two stepped towers on either side.
+    Tower(position=(-8, 0, -3))
+    Tower(position=( 8, 0, -3))
+
+    // A row of upright coin rings along the front edge.
+    Group(position=(-6, 0, 6)) {
+        CoinRing(position=(0,  0, 0))
+        CoinRing(position=(2,  0, 0))
+        CoinRing(position=(4,  0, 0))
+        CoinRing(position=(6,  0, 0))
+        CoinRing(position=(8,  0, 0))
+        CoinRing(position=(10, 0, 0))
+        CoinRing(position=(12, 0, 0))
+    }
+
+    // One huge thick ring tilted off-axis floating above.
+    Circle(radius=5, tube=0.5, position=(0, 8, 0), rotation=(45, 0, 30), color=#ff66dd)
+}
