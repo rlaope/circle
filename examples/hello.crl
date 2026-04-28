@@ -1,0 +1,28 @@
+// hello.crl — quick tour of every built-in primitive.
+//
+// Run:  circlelib run examples/hello.crl
+//
+// Drag with the left mouse button to orbit. Scroll to zoom. ESC to quit.
+
+import "modules/wheels" as wheels
+
+component Car {
+    body  = Cube(width=8, height=2, depth=4, position=(0, 1, 0), color=#3aa0ff)
+    roof  = Cube(width=4, height=1.5, depth=3.5, position=(0, 2.75, 0), color=#1d6fc0)
+    front = wheels.Pair(offset=(0, 0, 1.6))
+    back  = wheels.Pair(offset=(0, 0, -1.6))
+}
+
+scene {
+    // Ground disk so we have a horizon line.
+    Circle(radius=20, position=(0, 0, 0), color=#222233)
+
+    // The full car, made of two imported wheel pairs and three primitives.
+    Car(position=(0, 0, 0))
+
+    // A floating sphere, just to flex the lighting.
+    Sphere(radius=1.4, position=(8, 4, -2), color=#ff4477)
+
+    // A column to the right.
+    Cylinder(radius=0.6, height=6, position=(-7, 3, 1), color=#88ff88)
+}

@@ -1,0 +1,7 @@
+// A pair of wheels mounted on the X axis. The caller passes `offset` to
+// place the pair forward/backward along the car body.
+
+component Pair {
+    Cylinder(radius=0.7, height=0.4, position=(-2, 0.7, 0), rotation=(0, 0, 90), color=#222222)
+    Cylinder(radius=0.7, height=0.4, position=(2, 0.7, 0), rotation=(0, 0, 90), color=#222222)
+}

@@ -1,0 +1,172 @@
+"""Lark parser + tree transformer for the circlelib DSL.
+
+`parse_source` parses a string of `.crl` source into a `Module` AST.
+`parse_file` does the same starting from a path.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from lark import Lark, Transformer, v_args
+
+from circlelib.ast.nodes import (
+    Argument,
+    Assignment,
+    Call,
+    ColorLit,
+    Component,
+    GroupBlock,
+    Identifier,
+    Import,
+    MemberAccess,
+    Module,
+    NumberLit,
+    Scene,
+    StringLit,
+    TupleLit,
+)
+
+
+_GRAMMAR_PATH = Path(__file__).resolve().parent.parent / "grammar" / "circle.lark"
+
+
+def _build_parser() -> Lark:
+    grammar = _GRAMMAR_PATH.read_text(encoding="utf-8")
+    return Lark(grammar, parser="earley", maybe_placeholders=False)
+
+
+_PARSER: Lark | None = None
+
+
+def _parser() -> Lark:
+    global _PARSER
+    if _PARSER is None:
+        _PARSER = _build_parser()
+    return _PARSER
+
+
+def _hex_to_rgb(token: str) -> tuple[float, float, float]:
+    s = token.lstrip("#")
+    r = int(s[0:2], 16) / 255.0
+    g = int(s[2:4], 16) / 255.0
+    b = int(s[4:6], 16) / 255.0
+    return (r, g, b)
+
+
+@v_args(inline=True)
+class _ToAst(Transformer):
+    # Literals -------------------------------------------------------
+
+    def number_lit(self, tok):
+        return NumberLit(float(tok))
+
+    def string_lit(self, tok):
+        # Strip surrounding quotes from ESCAPED_STRING.
+        raw = str(tok)
+        return StringLit(raw[1:-1])
+
+    def color_lit(self, tok):
+        return ColorLit(_hex_to_rgb(str(tok)))
+
+    def tuple_lit(self, *items):
+        return TupleLit(tuple(items))
+
+    def expr(self, child):
+        # Unwrap the single-child `expr` wrapper for unaliased branches
+        # (currently just `tuple_lit`).
+        return child
+
+    # Names ----------------------------------------------------------
+
+    def qualified_name(self, *parts):
+        names = tuple(str(p) for p in parts)
+        if len(names) == 1:
+            return Identifier(names[0])
+        return MemberAccess(names)
+
+    def ident_expr(self, ref):
+        return ref
+
+    # Calls ----------------------------------------------------------
+
+    def call(self, callee, arg_list=None):
+        args = tuple(arg_list) if arg_list is not None else ()
+        return Call(callee=callee, args=args)
+
+    def call_expr(self, call_node):
+        return call_node
+
+    @v_args(inline=False)
+    def arg_list(self, items):
+        return list(items)
+
+    def arg(self, name, value):
+        return Argument(name=str(name), value=value)
+
+    # Statements -----------------------------------------------------
+
+    def assignment(self, name, value):
+        return Assignment(name=str(name), value=value)
+
+    def call_stmt(self, call_node):
+        return call_node
+
+    def group_stmt(self, *children):
+        # children: optional group_args followed by zero or more stmts.
+        args: tuple[Argument, ...] = ()
+        body: list = []
+        for child in children:
+            if isinstance(child, list):
+                args = tuple(child)
+            else:
+                body.append(child)
+        return GroupBlock(args=args, body=body)
+
+    def group_args(self, arg_list=None):
+        return list(arg_list) if arg_list is not None else []
+
+    def stmt(self, child):
+        return child
+
+    # Top level ------------------------------------------------------
+
+    def import_stmt(self, path_tok, alias_tok):
+        path = str(path_tok)[1:-1]
+        return Import(path=path, alias=str(alias_tok))
+
+    def component_def(self, name, *body):
+        return Component(name=str(name), body=list(body))
+
+    def scene_def(self, *body):
+        return Scene(body=list(body))
+
+    def top_item(self, item):
+        return item
+
+    @v_args(inline=False)
+    def start(self, items):
+        module = Module()
+        scenes: list[Scene] = []
+        for it in items:
+            if isinstance(it, Import):
+                module.imports.append(it)
+            elif isinstance(it, Component):
+                module.components.append(it)
+            elif isinstance(it, Scene):
+                scenes.append(it)
+        module.scene = scenes[0] if scenes else None
+        module.__circlelib_scene_count__ = len(scenes)
+        return module
+
+
+def parse_source(source: str) -> Module:
+    tree = _parser().parse(source)
+    module = _ToAst().transform(tree)
+    if getattr(module, "__circlelib_scene_count__", 0) > 1:
+        raise SyntaxError("only one scene block is allowed per file")
+    return module
+
+
+def parse_file(path: str | Path) -> Module:
+    return parse_source(Path(path).read_text(encoding="utf-8"))

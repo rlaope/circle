@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "circlelib"
+version = "0.1.0"
+description = "A tiny DSL and renderer for declaring 3D scenes."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "rlaope" }]
+dependencies = [
+    "lark>=1.1.9",
+    "moderngl>=5.10",
+    "glfw>=2.7",
+    "pyrr>=0.10",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+circlelib = "circlelib.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["circlelib*"]
+
+[tool.setuptools.package-data]
+"circlelib.grammar" = ["*.lark"]

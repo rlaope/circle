@@ -1,0 +1,57 @@
+// circlelib DSL grammar.
+//
+// A program is a sequence of top-level items: imports, component
+// definitions, and at most one scene block. Component bodies and scene
+// blocks contain statements that are either named assignments or bare
+// calls. Group blocks nest the same kind of statements.
+
+start: top_item*
+
+top_item: import_stmt
+        | component_def
+        | scene_def
+
+import_stmt: "import" STRING "as" NAME
+
+component_def: "component" NAME "{" stmt* "}"
+
+scene_def: "scene" "{" stmt* "}"
+
+stmt: assignment
+    | call_stmt
+    | group_stmt
+
+assignment: NAME "=" expr
+call_stmt: call
+group_stmt: "Group" group_args? "{" stmt* "}"
+
+group_args: "(" [arg_list] ")"
+
+call: qualified_name "(" [arg_list] ")"
+
+qualified_name: NAME ("." NAME)*
+
+arg_list: arg ("," arg)* ","?
+arg: NAME "=" expr
+
+expr: tuple_lit
+    | NUMBER       -> number_lit
+    | STRING       -> string_lit
+    | HEXCOLOR     -> color_lit
+    | qualified_name -> ident_expr
+    | call         -> call_expr
+
+tuple_lit: "(" expr ("," expr)+ ","? ")"
+
+NAME: /[A-Za-z_][A-Za-z0-9_]*/
+HEXCOLOR: /#[0-9a-fA-F]{6}/
+
+%import common.SIGNED_NUMBER -> NUMBER
+%import common.ESCAPED_STRING -> STRING
+%import common.WS
+%import common.CPP_COMMENT
+%import common.C_COMMENT
+
+%ignore WS
+%ignore CPP_COMMENT
+%ignore C_COMMENT
