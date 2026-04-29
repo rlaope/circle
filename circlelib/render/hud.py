@@ -47,7 +47,7 @@ _FONT_CANDIDATES = [
 ]
 
 
-def _load_mono_font(size: int = 13):
+def _load_mono_font(size: int = 20):
     for path in _FONT_CANDIDATES:
         if Path(path).exists():
             try:
@@ -58,14 +58,16 @@ def _load_mono_font(size: int = 13):
 
 
 class Hud:
-    WIDTH_PX = 240
-    HEIGHT_PX = 130
-    MARGIN_PX = 12
+    WIDTH_PX = 420
+    HEIGHT_PX = 220
+    MARGIN_PX = 16
+    LINE_HEIGHT_PX = 26
+    PADDING_PX = 14
 
     def __init__(self, ctx: moderngl.Context):
         self.ctx = ctx
         self._program = ctx.program(vertex_shader=_HUD_VS, fragment_shader=_HUD_FS)
-        self._font = _load_mono_font(13)
+        self._font = _load_mono_font(20)
 
         self._texture = ctx.texture((self.WIDTH_PX, self.HEIGHT_PX), 4)
         self._texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
@@ -92,16 +94,16 @@ class Hud:
             return
         self._cached_text = text
         img = Image.new(
-            "RGBA", (self.WIDTH_PX, self.HEIGHT_PX), (0, 0, 0, 170)
+            "RGBA", (self.WIDTH_PX, self.HEIGHT_PX), (0, 0, 0, 180)
         )
         draw = ImageDraw.Draw(img)
         # Header row in green; body rows lighter.
         lines = text.splitlines()
-        y = 8
+        y = self.PADDING_PX
         for i, line in enumerate(lines):
             color = (0, 255, 200, 255) if i == 0 else (220, 235, 255, 255)
-            draw.text((10, y), line, fill=color, font=self._font)
-            y += 16
+            draw.text((self.PADDING_PX, y), line, fill=color, font=self._font)
+            y += self.LINE_HEIGHT_PX
         flipped = img.transpose(Image.FLIP_TOP_BOTTOM)
         self._texture.write(flipped.tobytes())
 
