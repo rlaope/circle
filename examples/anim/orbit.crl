@@ -6,7 +6,6 @@
 //   circlelib run examples/anim/orbit.crl --check
 
 scene {
-    Plane(width=20, depth=20, position=(0, 0, 0), color=#0a0a18)
     sun    = Sphere(radius=1.5, position=(0, 1, 0), color=gold)
     planet = Sphere(radius=0.5, position=(6, 1, 0), color=#3aa0ff)
 }

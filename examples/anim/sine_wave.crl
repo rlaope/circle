@@ -3,8 +3,6 @@
 // animation loops every `duration` seconds via the renderer.
 
 scene {
-    Plane(width=24, depth=8, position=(0, 0, 0), color=#0a0a18)
-
     s0 = Sphere(radius=0.4, position=(-9, 1, 0), color=#3aa0ff)
     s1 = Sphere(radius=0.4, position=(-6, 1, 0), color=#5ccfff)
     s2 = Sphere(radius=0.4, position=(-3, 1, 0), color=#7ae0ff)

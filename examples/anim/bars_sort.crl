@@ -3,8 +3,6 @@
 // circlelib run examples/anim/bars_sort.crl
 
 scene {
-    Plane(width=20, depth=10, position=(0, 0, 0), color=#0a0a18)
-
     a = Cube(width=1, height=4, depth=1, position=(-3, 2.0, 0), color=#3aa0ff)
     b = Cube(width=1, height=4, depth=1, position=(-1, 2.0, 0), color=#5ccfff)
     c = Cube(width=1, height=4, depth=1, position=( 1, 2.0, 0), color=#ff5577)

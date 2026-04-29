@@ -8,12 +8,15 @@ frame with the current time (looped over the scene's duration).
 
 from __future__ import annotations
 
+import math
+from collections import deque
 from typing import List, Union
 
 import glfw
 import moderngl
 
 from circlelib.render.camera import OrbitCamera
+from circlelib.render.hud import Hud
 from circlelib.render.renderer import Renderer
 from circlelib.runtime.evaluator import CompiledScene, SceneNode
 
@@ -51,6 +54,7 @@ def run_window(
     window = _init_glfw(title, width, height)
     ctx = moderngl.create_context()
     renderer = Renderer(ctx)
+    hud = Hud(ctx)
 
     if isinstance(scene, CompiledScene):
         compiled = scene
@@ -64,6 +68,8 @@ def run_window(
 
     camera = OrbitCamera()
     start_time = glfw.get_time()
+    last_frame_time = start_time
+    fps_window: deque[float] = deque(maxlen=60)
 
     state = {"dragging": False, "last_x": 0.0, "last_y": 0.0}
 
@@ -96,14 +102,41 @@ def run_window(
         if fb_h == 0:
             glfw.poll_events()
             continue
+
+        now = glfw.get_time()
+        dt = now - last_frame_time
+        last_frame_time = now
+        if dt > 0:
+            fps_window.append(1.0 / dt)
+
+        t = 0.0
         if animated and compiled is not None:
-            elapsed = glfw.get_time() - start_time
+            elapsed = now - start_time
             t = elapsed % compiled.duration if compiled.duration > 0 else 0.0
             renderer.update(compiled(t))
+
         ctx.viewport = (0, 0, fb_w, fb_h)
         view = camera.view_matrix()
         proj = camera.projection_matrix(fb_w / fb_h)
         renderer.draw(view, proj)
+
+        eye = camera.eye()
+        fps = sum(fps_window) / len(fps_window) if fps_window else 0.0
+        if compiled is not None and compiled.is_animated:
+            t_line = f"t      {t:5.2f} / {compiled.duration:5.2f}"
+        else:
+            t_line = "t      static"
+        hud.set_text(
+            "camera\n"
+            f"yaw    {math.degrees(camera.yaw):6.1f}\n"
+            f"pitch  {math.degrees(camera.pitch):6.1f}\n"
+            f"radius {camera.radius:6.2f}\n"
+            f"eye    ({eye[0]:5.1f},{eye[1]:5.1f},{eye[2]:5.1f})\n"
+            f"{t_line}\n"
+            f"fps    {fps:6.1f}"
+        )
+        hud.draw(fb_w, fb_h)
+
         glfw.swap_buffers(window)
         glfw.poll_events()
 

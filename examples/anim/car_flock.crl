@@ -5,8 +5,6 @@
 // instances on staggered timings — still comes through.
 
 scene {
-    Plane(width=40, depth=20, position=(0, 0, 0), color=#0a0a18)
-
     car_a = Cube(width=4, height=1.5, depth=2, position=(-15, 0.75, -4), color=#3aa0ff)
     car_b = Cube(width=4, height=1.5, depth=2, position=(-15, 0.75,  0), color=#ff5577)
     car_c = Cube(width=4, height=1.5, depth=2, position=(-15, 0.75,  4), color=gold)
