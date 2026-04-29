@@ -1,0 +1,78 @@
+{
+  "scene block": {
+    "prefix": "scene",
+    "body": [
+      "scene {",
+      "    $0",
+      "}"
+    ],
+    "description": "Top-level scene block"
+  },
+  "component definition": {
+    "prefix": "component",
+    "body": [
+      "component ${1:Name} {",
+      "    $0",
+      "}"
+    ],
+    "description": "Define a reusable component"
+  },
+  "import alias": {
+    "prefix": "import",
+    "body": [
+      "import \"${1:path/to/module}\" as ${2:alias}"
+    ],
+    "description": "Import another .crl module"
+  },
+  "Cube primitive": {
+    "prefix": "cube",
+    "body": [
+      "Cube(width=${1:1}, height=${2:1}, depth=${3:1}, position=(${4:0}, ${5:0}, ${6:0}), color=${7:#ffffff})"
+    ],
+    "description": "Cube primitive"
+  },
+  "Sphere primitive": {
+    "prefix": "sphere",
+    "body": [
+      "Sphere(radius=${1:1}, position=(${2:0}, ${3:0}, ${4:0}), color=${5:#ffffff})"
+    ],
+    "description": "Sphere primitive"
+  },
+  "Cylinder primitive": {
+    "prefix": "cylinder",
+    "body": [
+      "Cylinder(radius=${1:1}, height=${2:2}, position=(${3:0}, ${4:0}, ${5:0}), color=${6:#ffffff})"
+    ],
+    "description": "Cylinder primitive"
+  },
+  "Circle (torus) primitive": {
+    "prefix": "circle",
+    "body": [
+      "Circle(radius=${1:2}, tube=${2:0.2}, position=(${3:0}, ${4:0}, ${5:0}), color=${6:#ffffff})"
+    ],
+    "description": "Circle (torus) primitive"
+  },
+  "Plane primitive": {
+    "prefix": "plane",
+    "body": [
+      "Plane(width=${1:10}, depth=${2:10}, position=(${3:0}, ${4:0}, ${5:0}), color=${6:#1a1a1a})"
+    ],
+    "description": "Plane primitive"
+  },
+  "Cone primitive": {
+    "prefix": "cone",
+    "body": [
+      "Cone(radius=${1:1}, height=${2:2}, position=(${3:0}, ${4:0}, ${5:0}), color=${6:#ffffff})"
+    ],
+    "description": "Cone primitive"
+  },
+  "Group block": {
+    "prefix": "group",
+    "body": [
+      "Group(position=(${1:0}, ${2:0}, ${3:0})) {",
+      "    $0",
+      "}"
+    ],
+    "description": "Group block (composes a transform onto children)"
+  }
+}

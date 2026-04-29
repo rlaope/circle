@@ -1,0 +1,43 @@
+{
+  "name": "vscode-circlelib",
+  "displayName": "circlelib",
+  "description": "Syntax highlighting and snippets for the circlelib .crl DSL.",
+  "version": "0.1.0",
+  "publisher": "rlaope",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rlaope/circle.git",
+    "directory": "tools/vscode-circlelib"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "circlelib",
+        "aliases": ["circlelib", "crl"],
+        "extensions": [".crl"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "circlelib",
+        "scopeName": "source.crl",
+        "path": "./syntaxes/circlelib.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "circlelib",
+        "path": "./snippets/circlelib.json"
+      }
+    ]
+  }
+}

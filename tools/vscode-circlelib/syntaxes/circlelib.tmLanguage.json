@@ -1,0 +1,105 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "circlelib",
+  "scopeName": "source.crl",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#colors" },
+    { "include": "#keywords" },
+    { "include": "#builtins" },
+    { "include": "#numbers" },
+    { "include": "#operators" },
+    { "include": "#identifiers" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.crl",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.crl",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.crl",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.crl", "match": "\\\\." }
+      ]
+    },
+    "colors": {
+      "patterns": [
+        {
+          "name": "constant.numeric.color.hex.crl",
+          "match": "#[0-9a-fA-F]{6}\\b"
+        },
+        {
+          "name": "constant.numeric.color.hex.crl",
+          "match": "#[0-9a-fA-F]{3}\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.crl",
+          "match": "\\b(import|as|component|scene)\\b"
+        },
+        {
+          "name": "keyword.other.group.crl",
+          "match": "\\b(Group)\\b"
+        }
+      ]
+    },
+    "builtins": {
+      "patterns": [
+        {
+          "name": "support.class.primitive.crl",
+          "match": "\\b(Cube|Sphere|Cylinder|Circle|Plane|Cone)\\b"
+        },
+        {
+          "name": "support.function.color.crl",
+          "match": "\\b(rgb|rgba)(?=\\s*\\()"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.crl",
+          "match": "\\b\\d+\\.\\d+([eE][-+]?\\d+)?\\b"
+        },
+        {
+          "name": "constant.numeric.integer.crl",
+          "match": "\\b\\d+([eE][-+]?\\d+)?\\b"
+        }
+      ]
+    },
+    "operators": {
+      "name": "keyword.operator.crl",
+      "match": "[+\\-*/%=]"
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "entity.name.function.call.crl",
+          "match": "\\b[A-Z][A-Za-z0-9_]*(?=\\s*\\()"
+        },
+        {
+          "match": "\\b([a-z_][A-Za-z0-9_]*)\\.([A-Z][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "variable.other.module.crl" },
+            "2": { "name": "entity.name.function.call.crl" }
+          }
+        }
+      ]
+    }
+  }
+}

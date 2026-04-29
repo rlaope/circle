@@ -234,6 +234,15 @@ The suite covers grammar, AST equality, scope rules, module resolution
 A full spec of the `.crl` syntax — lexical tokens, grammar, scope
 rules, errors — lives in [docs/LANGUAGE.md](docs/LANGUAGE.md).
 
+## Editor support
+
+A VSCode extension scaffold ships in this repo at
+[`tools/vscode-circlelib/`](tools/vscode-circlelib/). It provides
+syntax highlighting (keywords, primitives, hex / `rgb()` / `rgba()`
+colors, numbers, strings, comments) and snippets for the common
+primitives. Install via **Developer: Install Extension from
+Location…** in VSCode and point it at that folder.
+
 ---
 
 ## Author
