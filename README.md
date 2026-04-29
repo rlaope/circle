@@ -1,44 +1,39 @@
 # circlelib
 
-> A tiny domain-specific language for declaring 3D scenes, with a built-in
-> desktop renderer.
+> **3D scenes as code — modules, components, and animations in a small modern language.**
 
 ![circlelib hero — circles.crl rendered with the Matrix-style grid](docs/screenshots/circles-hero.png)
 
-You write a `.crl` file describing primitives (cubes, spheres, 3D rings, …)
-and their positions, then run it. A black window opens with a glowing
-Matrix-style grid for orientation, your scene is rendered, and an orbit
-camera lets you look around with the mouse.
+`circlelib` is a tiny custom language for declaring 3D scenes. You write
+a `.crl` file describing primitives, components, and imports; you run it;
+a black window opens with a glowing Matrix-style grid for orientation,
+your scene is rendered, and an orbit camera lets you look around with the
+mouse.
 
 ```sh
 $ circlelib run examples/circles.crl
 ```
 
----
-
-## Why this exists
-
-`circlelib` is somewhere between a graphics library and a small programming
-language. It has its own syntax, parser, AST, module/import system, and a
+It is somewhere between a graphics library and a small programming
+language. It has its own syntax, parser, AST, module system, and a
 runtime that turns the AST into a 3D scene rendered with OpenGL.
 
-The current release (v0.1) is intentionally small: static primitives only.
-The codebase is structured so that animation can be added later without
-rewriting the core.
+---
 
-## At a glance
+## Why circlelib
 
-- **Custom DSL with its own grammar** — `.crl` files, parsed by
-  [Lark](https://lark-parser.readthedocs.io/) into a typed AST.
-- **Module system** — `import "modules/wheels" as wheels` resolves
-  relative paths and detects circular imports.
-- **Composable components** — define `component Car { ... }` once and
-  instantiate it with arbitrary positions/rotations.
-- **Five built-in primitives**, including a true 3D ring (torus).
-- **OpenGL 3.3 renderer** with Lambert shading, an orbit camera, and a
-  Matrix-style ground grid drawn behind the scene every frame.
-- **CLI with a headless `--check` mode** for CI and unit testing.
-- **15 pytest cases** covering the parser, resolver, and evaluator.
+- **Modules and components, not just a flat script.** Define `component
+  Car { ... }` once, drop it into a scene with `Car(position=(0, 0, 0))`,
+  and import it across files with `import "modules/wheels" as wheels`.
+- **Modern argument syntax.** Every call uses keyword arguments
+  (`Cube(width=10, height=3, depth=5)`); positions are tuples, colors
+  are hex literals, and rotations are degrees.
+- **A renderer that's interactive out of the box.** The window opens
+  with a Matrix-style ground grid, the three world axes coloured, an
+  orbit camera, depth testing, back-face culling, and 4× MSAA.
+- **A real custom language under the hood.** Lark grammar, AST,
+  resolver with circular-import detection, evaluator that composes
+  4×4 transforms, ModernGL renderer with a Lambert shader.
 
 ---
 
@@ -58,7 +53,9 @@ component Bullseye {
 component Tower {
     Circle(radius=2.0, tube=0.30, position=(0, 0.5, 0), color=#3aa0ff)
     Circle(radius=1.7, tube=0.28, position=(0, 1.5, 0), color=#4ab0ff)
-    // ...stack of fat 3D rings
+    Circle(radius=1.4, tube=0.26, position=(0, 2.5, 0), color=#5ac0ff)
+    Circle(radius=1.1, tube=0.24, position=(0, 3.5, 0), color=#6ad0ff)
+    Circle(radius=0.8, tube=0.22, position=(0, 4.5, 0), color=#7ae0ff)
 }
 
 scene {
@@ -135,13 +132,13 @@ scene {
 
 ## How it works
 
-`.crl` source flows through five stages before pixels appear:
+A `.crl` file flows through five stages before pixels appear:
 
 ```
    source.crl
        |
        v
-+--------------+   Lark grammar (circle.lark)
++--------------+   Lark grammar
 |   Parser     |   tokens -> parse tree
 +------+-------+
        |
@@ -169,46 +166,9 @@ scene {
 +--------------+
 ```
 
-## Package structure
-
-```
-circlelib/
-├── pyproject.toml
-├── README.md
-├── circlelib/
-│   ├── __init__.py
-│   ├── __main__.py
-│   ├── cli.py                  # `circlelib run scene.crl`
-│   ├── grammar/
-│   │   └── circle.lark         # DSL grammar
-│   ├── parser/
-│   │   └── transformer.py      # Lark tree -> AST
-│   ├── ast/
-│   │   └── nodes.py            # AST node dataclasses
-│   ├── runtime/
-│   │   ├── resolver.py         # import resolution + circular detection
-│   │   ├── evaluator.py        # AST -> SceneNode list
-│   │   └── primitives.py       # Mesh generators (cube/sphere/cylinder/torus)
-│   └── render/
-│       ├── window.py           # GLFW window + main loop + input
-│       ├── renderer.py         # ModernGL pipeline + Matrix grid
-│       └── camera.py           # Orbit camera
-├── examples/
-│   ├── hello.crl               # Car composed of imported wheel pairs
-│   ├── circles.crl             # 3D-ring sculpture (the hero image)
-│   └── modules/
-│       └── wheels.crl
-├── tests/
-│   ├── test_parser.py          # 7 cases — grammar + AST
-│   └── test_evaluator.py       # 8 cases — resolver + evaluator
-└── docs/
-    └── screenshots/
-        └── circles-hero.png
-```
-
 ---
 
-## Install (from source)
+## Install
 
 ```sh
 git clone https://github.com/rlaope/circle.git
@@ -228,17 +188,16 @@ circlelib run examples/circles.crl
 circlelib run examples/hello.crl
 
 # Headless: parse + evaluate only, no window required.
-# Useful in CI or for syntax/runtime validation.
 circlelib run examples/circles.crl --check
 ```
 
 ### Window controls
 
-| Input                     | Action     |
-|---------------------------|------------|
-| Left mouse drag           | Orbit      |
-| Scroll wheel              | Zoom       |
-| ESC                       | Quit       |
+| Input             | Action |
+|-------------------|--------|
+| Left mouse drag   | Orbit  |
+| Scroll wheel      | Zoom   |
+| ESC               | Quit   |
 
 ## Tests
 
@@ -246,31 +205,15 @@ circlelib run examples/circles.crl --check
 pytest
 ```
 
-15 cases, ~0.1s wall time. They cover:
-
-- empty source, scene/component parsing, color and string literals
-- single-scene-per-file rule
-- import statement + member access (`alias.Name`)
-- group block transformation composition
-- relative import resolution
-- circular import detection
-- unknown primitives and missing required arguments
+The suite covers grammar, AST equality, scope rules, module resolution
+(including circular-import detection), and transform composition.
 
 ---
 
-## Roadmap
+## Author
 
-- [x] Custom grammar, parser, AST
-- [x] Module system with relative imports + circular detection
-- [x] Five built-in primitives (Cube, Sphere, Cylinder, Circle/torus, Group)
-- [x] OpenGL renderer with orbit camera and Matrix-style grid
-- [x] CLI + headless `--check`
-- [ ] `animate { ... }` blocks (slot is reserved in the AST/evaluator design)
-- [ ] More primitives: `Plane`, `Cone`, `Torus` with explicit args
-- [ ] Optional Three.js export so scenes can be shared in the browser
-- [ ] Shadows / textures / PBR materials
-
----
+**rlaope** — owner and maintainer.
+GitHub: [@rlaope](https://github.com/rlaope) · Repo: [rlaope/circle](https://github.com/rlaope/circle)
 
 ## License
 
