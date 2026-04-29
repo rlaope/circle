@@ -12,6 +12,7 @@ from circlelib.ast.nodes import (
     Import,
     MemberAccess,
     NumberLit,
+    RgbCall,
     Scene,
     StringLit,
     TupleLit,
@@ -156,3 +157,42 @@ def test_tuple_arithmetic_parses():
     assert pos.op == "+"
     assert isinstance(pos.left, TupleLit)
     assert isinstance(pos.right, TupleLit)
+
+
+def test_hex_3digit_shorthand_expands():
+    mod = parse_source("scene { Sphere(radius=1, color=#f0f) }")
+    color = mod.scene.body[0].args[1].value
+    assert isinstance(color, ColorLit)
+    # #f0f -> #ff00ff -> (1.0, 0.0, 1.0)
+    assert color.rgb == (1.0, 0.0, 1.0)
+
+
+def test_named_color_parses_as_identifier():
+    mod = parse_source("scene { Sphere(radius=1, color=red) }")
+    color = mod.scene.body[0].args[1].value
+    # Named colors flow through the identifier resolution chain at eval
+    # time; the parser sees them as plain Identifier nodes.
+    assert isinstance(color, Identifier)
+    assert color.name == "red"
+
+
+def test_rgb_call_parses_to_rgbcall():
+    mod = parse_source(
+        "scene { Sphere(radius=1, color=rgb(255, 80, 120)) }"
+    )
+    color = mod.scene.body[0].args[1].value
+    assert isinstance(color, RgbCall)
+    assert len(color.components) == 3
+    assert color.components[0] == NumberLit(255.0)
+    assert color.components[1] == NumberLit(80.0)
+    assert color.components[2] == NumberLit(120.0)
+
+
+def test_rgba_call_parses_to_rgbcall_with_alpha():
+    mod = parse_source(
+        "scene { Sphere(radius=1, color=rgba(255, 80, 120, 0.5)) }"
+    )
+    color = mod.scene.body[0].args[1].value
+    assert isinstance(color, RgbCall)
+    assert len(color.components) == 4
+    assert color.components[3] == NumberLit(0.5)

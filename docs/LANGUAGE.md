@@ -62,7 +62,7 @@ A file with two or more `scene` blocks is a `SyntaxError`.
 | `NAME`      | `[A-Za-z_][A-Za-z0-9_]*`                   |
 | `NUMBER`    | signed decimal — `42`, `-3.14`, `1e9`      |
 | `STRING`    | double-quoted, `\"` and `\\` escapes       |
-| `HEXCOLOR`  | `#` then exactly six hex digits — `#ff5577`|
+| `HEXCOLOR`  | `#` then 3 or 6 hex digits — `#ff5577`, `#f57` |
 
 Identifiers starting with an uppercase letter are conventionally
 component names, primitives, or import aliases; lowercase names are
@@ -157,19 +157,29 @@ expr      ::=  add_expr
 add_expr  ::=  mul_expr  (("+" | "-") mul_expr)*
 mul_expr  ::=  unary     (("*" | "/" | "%") unary)*
 unary     ::=  "-" unary | atom
-atom      ::=  NUMBER | STRING | HEXCOLOR | tuple_lit
+atom      ::=  NUMBER | STRING | HEXCOLOR | tuple_lit | rgb_call
             | qualified_name | call | "(" expr ")"
 tuple_lit ::=  "(" expr ("," expr)+ ","? ")"
+rgb_call  ::=  "rgb"  "(" expr "," expr "," expr ")"
+            |  "rgba" "(" expr "," expr "," expr "," expr ")"
 ```
 
 ### 6.1 Literals
 
-| Form           | Example       | Type                    |
-|----------------|---------------|-------------------------|
-| Number         | `12.5`        | float                   |
-| Tuple          | `(1, 2, 3)`   | tuple of values         |
-| Hex color      | `#ff5577`     | `(r, g, b)` in `[0, 1]` |
-| String literal | `"label"`     | str                     |
+| Form              | Example                  | Type                    |
+|-------------------|--------------------------|-------------------------|
+| Number            | `12.5`                   | float                   |
+| Tuple             | `(1, 2, 3)`              | tuple of values         |
+| Hex color         | `#ff5577`, `#f57`        | `(r, g, b)` in `[0, 1]` |
+| Named color       | `red`, `gold`            | `(r, g, b)` in `[0, 1]` |
+| `rgb(r, g, b)`    | `rgb(255, 80, 120)`      | `(r, g, b)` in `[0, 1]` |
+| `rgba(r, g, b, a)`| `rgba(255, 80, 120, 0.5)`| `(r, g, b, a)` (α 0–1)  |
+| String literal    | `"label"`                | str                     |
+
+`#rgb` 3-digit hex is the standard CSS shorthand: each digit is doubled
+(`#f0f` → `#ff00ff`). `rgb()` and `rgba()` take **integers 0–255** for
+the channels; `rgba`'s alpha is a float in `[0, 1]`. Named colors are
+the standard CSS3 set (~148 names).
 
 A tuple literal needs **at least one comma** (`(1, 2)`). A
 parenthesised expression `(expr)` is just grouping, not a 1-tuple.
@@ -181,8 +191,12 @@ A bare identifier in an expression resolves through the active scopes
 
 1. The current component body's bindings.
 2. The current module's top-level bindings.
+3. The CSS named-color table (case-insensitive). Names like `red`,
+   `gold`, `slateblue`, … resolve to a `(r, g, b)` tuple here.
 
-If unresolved, `EvalError: undefined name: <name>`.
+A user binding always shadows the named-color table, so `red = (...)`
+takes precedence in scope. If unresolved at any layer, `EvalError:
+undefined name: <name>`.
 
 ### 6.3 Arithmetic
 
@@ -266,8 +280,10 @@ Standard argument semantics:
 
 - `position` — `(x, y, z)` translation in world units.
 - `rotation` — `(rx, ry, rz)` in **degrees**, applied X then Y then Z.
-- `color`    — hex literal `#rrggbb` (or any expression evaluating to a
-  3-tuple of floats in `[0, 1]`).
+- `color`    — any expression evaluating to a 3-tuple in `[0, 1]`
+  (hex literal `#rrggbb` / `#rgb`, named CSS color, `rgb(...)`,
+  `rgba(...)`, or a tuple binding). `rgba` keeps the alpha channel
+  on the produced `SceneNode`; the v0.2 renderer ignores it.
 
 `Circle` is a true 3D torus; `tube` is the radius of the tube around
 the ring.

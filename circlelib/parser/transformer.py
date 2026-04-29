@@ -23,6 +23,7 @@ from circlelib.ast.nodes import (
     MemberAccess,
     Module,
     NumberLit,
+    RgbCall,
     Scene,
     StringLit,
     TupleLit,
@@ -50,6 +51,9 @@ def _parser() -> Lark:
 
 def _hex_to_rgb(token: str) -> tuple[float, float, float]:
     s = token.lstrip("#")
+    if len(s) == 3:
+        # CSS shorthand: #rgb -> #rrggbb (each digit doubled).
+        s = "".join(c * 2 for c in s)
     r = int(s[0:2], 16) / 255.0
     g = int(s[2:4], 16) / 255.0
     b = int(s[4:6], 16) / 255.0
@@ -70,6 +74,12 @@ class _ToAst(Transformer):
 
     def color_lit(self, tok):
         return ColorLit(_hex_to_rgb(str(tok)))
+
+    def rgb3(self, r, g, b):
+        return RgbCall(components=(r, g, b))
+
+    def rgb4(self, r, g, b, a):
+        return RgbCall(components=(r, g, b, a))
 
     def tuple_lit(self, *items):
         return TupleLit(tuple(items))

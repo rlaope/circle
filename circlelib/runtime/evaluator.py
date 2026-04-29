@@ -30,12 +30,14 @@ from circlelib.ast.nodes import (
     MemberAccess,
     Module,
     NumberLit,
+    RgbCall,
     Scene,
     StringLit,
     TupleLit,
     UnaryOp,
 )
 from circlelib.runtime import primitives
+from circlelib.runtime.colors import lookup_named_color
 from circlelib.runtime.resolver import LoadedProgram
 
 
@@ -49,6 +51,7 @@ class SceneNode:
     normals: np.ndarray
     transform: np.ndarray  # 4x4 float32, column-major (pyrr default)
     color: Tuple[float, float, float]
+    alpha: float = 1.0
 
 
 class EvalError(RuntimeError):
@@ -153,15 +156,25 @@ def _local_transform(args: dict) -> np.ndarray:
 
 
 def _make_leaf(verts, indices, normals, args: dict) -> SceneNode:
-    color = args.get("color", DEFAULT_COLOR)
-    if not (isinstance(color, tuple) and len(color) == 3):
-        raise EvalError("'color' must be a hex literal like #rrggbb")
+    raw = args.get("color", DEFAULT_COLOR)
+    if not isinstance(raw, tuple) or len(raw) not in (3, 4):
+        raise EvalError(
+            "'color' must be a hex literal, rgb()/rgba(), a named CSS "
+            "color, or a 3-/4-tuple"
+        )
+    if len(raw) == 4:
+        color = (float(raw[0]), float(raw[1]), float(raw[2]))
+        alpha = float(raw[3])
+    else:
+        color = (float(raw[0]), float(raw[1]), float(raw[2]))
+        alpha = 1.0
     return SceneNode(
         vertices=verts,
         indices=indices,
         normals=normals,
         transform=_local_transform(args),
         color=color,
+        alpha=alpha,
     )
 
 
@@ -176,13 +189,17 @@ class _EvalCtx:
     module_envs: Dict[Path, Dict[str, object]] = field(default_factory=dict)
 
     def lookup(self, name: str):
-        # Innermost component scope first, then the current module env.
+        # Innermost component scope first, then the current module env,
+        # finally the CSS named-color table (so `color=red` works).
         for scope in reversed(self.component_env_stack):
             if name in scope:
                 return scope[name]
         module_env = self.module_envs.get(self.current_path, {})
         if name in module_env:
             return module_env[name]
+        named = lookup_named_color(name)
+        if named is not None:
+            return named
         raise EvalError(f"undefined name: {name}")
 
 
@@ -328,10 +345,29 @@ def _eval_expr(expr, ctx: _EvalCtx):
         return _apply_binop(expr.op, _eval_expr(expr.left, ctx), _eval_expr(expr.right, ctx))
     if isinstance(expr, UnaryOp):
         return _apply_unaryop(expr.op, _eval_expr(expr.operand, ctx))
+    if isinstance(expr, RgbCall):
+        return _eval_rgb_call(expr, ctx)
     if isinstance(expr, Call):
         # Evaluating a call as an argument value is unsupported in v0.1.
         raise EvalError("nested calls as argument values are not supported")
     raise EvalError(f"cannot evaluate expression: {type(expr).__name__}")
+
+
+def _eval_rgb_call(expr: RgbCall, ctx: _EvalCtx):
+    values = tuple(_eval_expr(c, ctx) for c in expr.components)
+    for v in values:
+        if not isinstance(v, (int, float)):
+            raise EvalError("rgb()/rgba() arguments must be numbers")
+    if len(values) == 3:
+        return (values[0] / 255.0, values[1] / 255.0, values[2] / 255.0)
+    if len(values) == 4:
+        return (
+            values[0] / 255.0,
+            values[1] / 255.0,
+            values[2] / 255.0,
+            float(values[3]),
+        )
+    raise EvalError("rgb()/rgba() must take 3 or 4 arguments")
 
 
 def _apply_binop(op: str, left, right):

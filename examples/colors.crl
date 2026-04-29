@@ -1,0 +1,15 @@
+// Showcases the four color formats:
+//   1. 6-digit hex      #rrggbb
+//   2. 3-digit shorthand #rgb
+//   3. CSS named colors  red, gold, slateblue, ...
+//   4. rgb()/rgba()      0-255 channels (alpha 0-1)
+
+scene {
+    Plane(width=20, depth=20, position=(0, 0, 0), color=#1a1a1a)
+
+    Sphere(radius=1, position=(-6, 1, 0), color=#ff5577)             // hex 6
+    Sphere(radius=1, position=(-3, 1, 0), color=#0f0)                // hex 3
+    Sphere(radius=1, position=( 0, 1, 0), color=gold)                // named
+    Sphere(radius=1, position=( 3, 1, 0), color=rgb(120, 200, 255))  // rgb()
+    Sphere(radius=1, position=( 6, 1, 0), color=rgba(255, 80, 120, 0.5))
+}

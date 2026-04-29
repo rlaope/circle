@@ -53,6 +53,7 @@ arg: NAME "=" expr
            | "-" unary_expr        -> neg
 
 ?atom: tuple_lit
+     | rgb_call
      | NUMBER          -> number_lit
      | STRING          -> string_lit
      | HEXCOLOR        -> color_lit
@@ -60,10 +61,13 @@ arg: NAME "=" expr
      | call            -> call_expr
      | "(" expr ")"
 
+rgb_call: "rgb"  "(" expr "," expr "," expr ")"           -> rgb3
+        | "rgba" "(" expr "," expr "," expr "," expr ")"  -> rgb4
+
 tuple_lit: "(" expr ("," expr)+ ","? ")"
 
 NAME: /[A-Za-z_][A-Za-z0-9_]*/
-HEXCOLOR: /#[0-9a-fA-F]{6}/
+HEXCOLOR: /#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/
 
 %import common.SIGNED_NUMBER -> NUMBER
 %import common.ESCAPED_STRING -> STRING

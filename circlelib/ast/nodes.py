@@ -14,6 +14,7 @@ Expr = Union[
     "NumberLit",
     "StringLit",
     "ColorLit",
+    "RgbCall",
     "TupleLit",
     "Identifier",
     "MemberAccess",
@@ -37,6 +38,12 @@ class StringLit:
 class ColorLit:
     # Stored as (r, g, b) floats in [0, 1].
     rgb: Tuple[float, float, float]
+
+
+@dataclass(frozen=True)
+class RgbCall:
+    # 3 expressions for rgb(r, g, b); 4 for rgba(r, g, b, a).
+    components: Tuple["Expr", ...]
 
 
 @dataclass(frozen=True)

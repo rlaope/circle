@@ -94,7 +94,9 @@ produce thin hoops.
 |-------------------|-------------------------------|-----------------------|
 | Number            | `12.5`                        | float                 |
 | Tuple             | `(1, 2, 3)`                   | 3-tuple of floats     |
-| Hex color         | `#ff5577`                     | `(r, g, b)` in `[0,1]`|
+| Hex color         | `#ff5577`, `#f57`             | `(r, g, b)` in `[0,1]`|
+| Named color       | `red`, `gold`, `slateblue`    | `(r, g, b)` from CSS  |
+| `rgb()` / `rgba()`| `rgb(255, 80, 120)`           | `(r, g, b)` (or +α)   |
 | String literal    | `"label"`                     | str                   |
 | Identifier        | `size`                        | bound value           |
 | Arithmetic        | `size * 2`, `(0, 0, 0) + dir` | float / tuple result  |

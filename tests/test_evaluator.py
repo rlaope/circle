@@ -242,6 +242,56 @@ def test_plane_renders_with_translation(tmp_path: Path):
     assert nodes[1].color == pytest.approx((0.85, 0.85, 0.9))
 
 
+def test_all_four_color_formats_produce_same_rgb(tmp_path: Path):
+    entry = tmp_path / "main.crl"
+    _write(entry, """
+        scene {
+            Sphere(radius=1, position=(0, 0, 0), color=#ff0000)
+            Sphere(radius=1, position=(2, 0, 0), color=#f00)
+            Sphere(radius=1, position=(4, 0, 0), color=red)
+            Sphere(radius=1, position=(6, 0, 0), color=rgb(255, 0, 0))
+        }
+    """)
+    nodes = evaluate(load(entry))
+    expected = (1.0, 0.0, 0.0)
+    for node in nodes:
+        assert node.color == pytest.approx(expected)
+        assert node.alpha == pytest.approx(1.0)
+
+
+def test_rgba_alpha_is_stored_on_node(tmp_path: Path):
+    entry = tmp_path / "main.crl"
+    _write(entry, """
+        scene {
+            Sphere(radius=1, color=rgba(255, 0, 0, 0.5))
+        }
+    """)
+    nodes = evaluate(load(entry))
+    assert nodes[0].color == pytest.approx((1.0, 0.0, 0.0))
+    assert nodes[0].alpha == pytest.approx(0.5)
+
+
+def test_user_binding_shadows_named_color(tmp_path: Path):
+    entry = tmp_path / "main.crl"
+    # The user explicitly binds `red` to a custom color tuple, which
+    # must take precedence over the CSS named-color fallback.
+    _write(entry, """
+        red = (0.1, 0.2, 0.3)
+        scene {
+            Sphere(radius=1, color=red)
+        }
+    """)
+    nodes = evaluate(load(entry))
+    assert nodes[0].color == pytest.approx((0.1, 0.2, 0.3))
+
+
+def test_unknown_named_color_raises(tmp_path: Path):
+    entry = tmp_path / "main.crl"
+    _write(entry, "scene { Sphere(radius=1, color=mauveberry) }")
+    with pytest.raises(EvalError):
+        evaluate(load(entry))
+
+
 def test_cone_apex_and_base_geometry(tmp_path: Path):
     entry = tmp_path / "main.crl"
     _write(entry, """
