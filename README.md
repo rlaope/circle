@@ -1,5 +1,7 @@
 # circlelib
 
+[![CI](https://github.com/rlaope/circle/actions/workflows/ci.yml/badge.svg)](https://github.com/rlaope/circle/actions/workflows/ci.yml)
+
 > **3D scenes as code — modules, components, and animations in a small modern language.**
 
 ![circlelib hero — circles.crl rendered with the Matrix-style grid](docs/screenshots/circles-hero.png)
