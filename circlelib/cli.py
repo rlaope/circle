@@ -112,6 +112,20 @@ def _build_parser() -> argparse.ArgumentParser:
         help="frame time used for the static export (default 0)",
     )
 
+    new = sub.add_parser(
+        "new",
+        help="scaffold a starter .crl file from a template",
+    )
+    new.add_argument("file", type=Path, help="output path (extension auto-added)")
+    new.add_argument(
+        "--template", default="default",
+        help="template to use (default | anim | stdlib)",
+    )
+    new.add_argument(
+        "--force", action="store_true",
+        help="overwrite the target file if it already exists",
+    )
+
     install = sub.add_parser(
         "install",
         help="install a third-party .crl package into the local cache",
@@ -228,6 +242,19 @@ def main(argv: list[str] | None = None) -> int:
                 f"`python -m http.server` to view)"
             )
             return 0
+
+    if args.command == "new":
+        from circlelib.runtime.scaffold import ScaffoldError, write_scaffold
+
+        try:
+            written = write_scaffold(
+                args.file, template=args.template, force=args.force
+            )
+        except ScaffoldError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 6
+        print(f"wrote {written}")
+        return 0
 
     if args.command == "install":
         from circlelib.runtime.installer import (
