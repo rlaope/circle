@@ -215,6 +215,13 @@ circlelib record examples/anim/orbit.crl --out orbit.mp4 --fps 30 --width 960 --
 
 # No ffmpeg? Dump a PNG sequence instead:
 circlelib record examples/anim/orbit.crl --out frames/ --png-fallback --fps 24
+
+# Export a static frame as a Three.js + glTF viewer site:
+circlelib export examples/hello.crl --out site/
+python -m http.server --directory site/   # then open http://localhost:8000
+
+# Or embed the buffer for a single-file gltf:
+circlelib export examples/circles.crl --out site_embedded/ --embed
 ```
 
 ### Window controls

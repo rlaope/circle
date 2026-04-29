@@ -31,3 +31,4 @@ include = ["circlelib*"]
 
 [tool.setuptools.package-data]
 "circlelib.grammar" = ["*.lark"]
+"circlelib.exporters.templates" = ["*.html"]

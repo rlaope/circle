@@ -69,6 +69,25 @@ def _build_parser() -> argparse.ArgumentParser:
              "(useful when ffmpeg is unavailable)",
     )
 
+    export = sub.add_parser(
+        "export", help="export a static frame as a glTF + Three.js viewer site"
+    )
+    export.add_argument("file", type=Path, help="path to a .crl file")
+    export.add_argument(
+        "--target", choices=["threejs"], default="threejs",
+        help="output target (only `threejs` is supported in v0.4)",
+    )
+    export.add_argument("--out", type=Path, required=True, help="output directory")
+    export.add_argument(
+        "--embed", action="store_true",
+        help="inline the binary buffer as base64 inside scene.gltf "
+             "(produces a self-contained scene.gltf with no separate .bin)",
+    )
+    export.add_argument(
+        "--time", type=float, default=0.0,
+        help="frame time used for the static export (default 0)",
+    )
+
     return parser
 
 
@@ -143,6 +162,21 @@ def main(argv: list[str] | None = None) -> int:
             return 3
         print(f"wrote {out}")
         return 0
+
+    if args.command == "export":
+        program = load(args.file)
+        scene = compile_program(program)
+        if args.target == "threejs":
+            from circlelib.exporters.threejs import export_threejs
+
+            out = export_threejs(
+                scene, args.out, embed=args.embed, time=args.time,
+            )
+            print(
+                f"wrote {out}/  (open {out}/index.html via "
+                f"`python -m http.server` to view)"
+            )
+            return 0
 
     return 1
 
