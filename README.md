@@ -276,7 +276,8 @@ circlelib export examples/circles.crl --out site_embedded/ --embed
 |-------------------|--------|
 | Left mouse drag   | Orbit  |
 | Scroll wheel      | Zoom   |
-| ESC               | Quit   |
+| `P`               | Snap PNG to `screenshots/<scene>_<timestamp>.png` |
+| `ESC`             | Quit   |
 
 ## Tests
 

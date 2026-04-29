@@ -15,12 +15,15 @@ from __future__ import annotations
 
 import math
 import sys
+import time
 from collections import deque
 from pathlib import Path
 from typing import List, Optional, Union
 
 import glfw
 import moderngl
+import numpy as np
+from PIL import Image
 
 from circlelib.render.camera import OrbitCamera
 from circlelib.render.hud import Hud
@@ -28,6 +31,19 @@ from circlelib.render.renderer import Renderer
 from circlelib.runtime.evaluator import CompiledScene, SceneNode, compile_program
 from circlelib.runtime.resolver import load
 from circlelib.runtime.watcher import FileWatcher
+
+
+def _snap_screen(ctx: moderngl.Context, fb_w: int, fb_h: int, scene_name: str) -> Path:
+    """Read the default framebuffer into a PNG under ./screenshots/."""
+    raw = ctx.screen.read(components=3, alignment=1)
+    arr = np.frombuffer(raw, dtype=np.uint8).reshape((fb_h, fb_w, 3))[::-1]
+    img = Image.fromarray(arr, "RGB")
+    out_dir = Path("screenshots")
+    out_dir.mkdir(exist_ok=True)
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    path = out_dir / f"{scene_name}_{stamp}.png"
+    img.save(path)
+    return path
 
 
 def _init_glfw(title: str, width: int, height: int):
@@ -93,7 +109,12 @@ def run_window(
     last_frame_time = start_time
     fps_window: deque[float] = deque(maxlen=60)
 
-    state = {"dragging": False, "last_x": 0.0, "last_y": 0.0}
+    state = {
+        "dragging": False,
+        "last_x": 0.0,
+        "last_y": 0.0,
+        "snap_requested": False,
+    }
 
     def on_mouse_button(_w, button, action, _mods):
         if button == glfw.MOUSE_BUTTON_LEFT:
@@ -113,6 +134,8 @@ def run_window(
     def on_key(_w, key, _scan, action, _mods):
         if key == glfw.KEY_ESCAPE and action == glfw.PRESS:
             glfw.set_window_should_close(window, True)
+        elif key == glfw.KEY_P and action == glfw.PRESS:
+            state["snap_requested"] = True
 
     glfw.set_mouse_button_callback(window, on_mouse_button)
     glfw.set_cursor_pos_callback(window, on_cursor)
@@ -180,6 +203,15 @@ def run_window(
             f"fps    {fps:6.1f}"
         )
         hud.draw(fb_w, fb_h)
+
+        if state["snap_requested"]:
+            state["snap_requested"] = False
+            scene_name = entry_path.stem if entry_path is not None else "scene"
+            try:
+                path = _snap_screen(ctx, fb_w, fb_h, scene_name)
+                print(f"snapped {path}", file=sys.stderr)
+            except Exception as e:
+                print(f"snap failed: {e}", file=sys.stderr)
 
         glfw.swap_buffers(window)
         glfw.poll_events()
