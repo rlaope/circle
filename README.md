@@ -204,6 +204,9 @@ circlelib run examples/hello.crl
 
 # Headless: parse + evaluate only, no window required.
 circlelib run examples/circles.crl --check
+
+# Render once to a PNG (no window, ideal for CI / docs / share previews).
+circlelib run examples/circles.crl --export-png hero.png --width 1280 --height 720
 ```
 
 ### Window controls

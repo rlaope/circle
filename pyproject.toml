@@ -16,6 +16,7 @@ dependencies = [
     "glfw>=2.7",
     "pyrr>=0.10",
     "numpy>=1.26",
+    "Pillow>=10.0",
 ]
 
 [project.optional-dependencies]
