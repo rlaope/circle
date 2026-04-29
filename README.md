@@ -147,6 +147,48 @@ scene {
 
 ---
 
+## Standard library and third-party packages
+
+`circlelib` ships with a built-in catalog of reusable components and
+supports installing third-party `.crl` packages from GitHub. Both are
+imported with the `@` prefix:
+
+```crl
+import "@stdlib/furniture/chair"          as ch    // ships in the package
+import "@stdlib/vehicles/car"             as v
+import "@rlaope/circle-extras/widgets/dial" as dial // installed locally
+
+scene {
+    v.Car(position=(0, 0, 0))
+    ch.Chair(position=(0, 0, 4))
+    dial.Dial(position=(-5, 0, 0))
+}
+```
+
+### `@stdlib/...`
+
+A built-in catalog under [`circlelib/stdlib/`](circlelib/stdlib/)
+covering furniture, vehicles, structures, and geometry helpers. Full
+catalog: [`circlelib/stdlib/README.md`](circlelib/stdlib/README.md).
+Three composed example scenes are walked through with renders in
+[`docs/stdlib_gallery.md`](docs/stdlib_gallery.md).
+
+### `circlelib install`
+
+```sh
+circlelib install rlaope/circle-extras           # clone from GitHub
+circlelib install --from ./my-pkg me/pkg         # offline / dev install
+circlelib install --upgrade rlaope/circle-extras # git pull
+circlelib install --list
+```
+
+Packages live under `~/.circlelib/packages/<owner>/<repo>/` (override
+with `$CIRCLELIB_HOME`). After installing, the same `@<owner>/<repo>/...`
+prefix used above resolves into that cache. Missing-package imports
+fail with the exact `circlelib install` command needed to fix them.
+
+---
+
 ## How it works
 
 A `.crl` file flows through five stages before pixels appear:
@@ -247,12 +289,17 @@ The suite covers grammar, AST equality, scope rules, module resolution
 A full spec of the `.crl` syntax — lexical tokens, grammar, scope
 rules, errors — lives in [docs/LANGUAGE.md](docs/LANGUAGE.md).
 
-## Animated demos
+## Galleries
 
-Six short animated scenes are in [`examples/anim/`](examples/anim/)
-and walked through with screenshots in
-[`docs/gallery.md`](docs/gallery.md): planet orbit, sorting bars, a
-spinning 3×3 grid, a travelling wave, bouncing balls, and a car flock.
+Two walked-through galleries with rendered screenshots:
+
+- [`docs/gallery.md`](docs/gallery.md) — six animated demos under
+  [`examples/anim/`](examples/anim/): planet orbit, sorting bars, a
+  spinning 3×3 grid, a travelling wave, bouncing balls, and a car flock.
+- [`docs/stdlib_gallery.md`](docs/stdlib_gallery.md) — three scenes
+  under [`examples/stdlib/`](examples/stdlib/) that compose components
+  from the shipped `@stdlib/` catalog: a living room, a parking lot, and
+  a scene-helper layout.
 
 ## Editor support
 
