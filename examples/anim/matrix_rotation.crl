@@ -1,0 +1,31 @@
+// Matrix rotation — a 3x3 grid of cubes spinning around the world Y axis.
+//
+// Each cube has its own rotation animation with a slight phase offset
+// achieved by varying the start/end rotation tuple.
+
+scene {
+    Plane(width=20, depth=20, position=(0, 0, 0), color=#0a0a18)
+
+    a = Cube(width=1, height=1, depth=1, position=(-3, 1, -3), color=#ff5577)
+    b = Cube(width=1, height=1, depth=1, position=( 0, 1, -3), color=#3aa0ff)
+    c = Cube(width=1, height=1, depth=1, position=( 3, 1, -3), color=gold)
+    d = Cube(width=1, height=1, depth=1, position=(-3, 1,  0), color=#3aa0ff)
+    e = Cube(width=1, height=1, depth=1, position=( 0, 1,  0), color=#ffffff)
+    f = Cube(width=1, height=1, depth=1, position=( 3, 1,  0), color=#3aa0ff)
+    g = Cube(width=1, height=1, depth=1, position=(-3, 1,  3), color=gold)
+    h = Cube(width=1, height=1, depth=1, position=( 0, 1,  3), color=#3aa0ff)
+    i = Cube(width=1, height=1, depth=1, position=( 3, 1,  3), color=#ff5577)
+}
+
+animate {
+    duration = 6
+    a.rotation = anim(t, (0, 0, 0), (0, 360, 0), 6)
+    b.rotation = anim(t, (0, 0, 0), (0, 360, 0), 6, easing=ease_in_out)
+    c.rotation = anim(t, (0, 0, 0), (0, 360, 0), 6)
+    d.rotation = anim(t, (0, 0, 0), (0, 360, 0), 6, easing=ease_in_out)
+    e.rotation = anim(t, (0, 0, 0), (360, 360, 0), 6)
+    f.rotation = anim(t, (0, 0, 0), (0, 360, 0), 6, easing=ease_in_out)
+    g.rotation = anim(t, (0, 0, 0), (0, 360, 0), 6)
+    h.rotation = anim(t, (0, 0, 0), (0, 360, 0), 6, easing=ease_in_out)
+    i.rotation = anim(t, (0, 0, 0), (0, 360, 0), 6)
+}

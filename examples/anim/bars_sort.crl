@@ -1,0 +1,21 @@
+// Sorting visualization — two bars swap heights over the duration.
+//
+// circlelib run examples/anim/bars_sort.crl
+
+scene {
+    Plane(width=20, depth=10, position=(0, 0, 0), color=#0a0a18)
+
+    a = Cube(width=1, height=4, depth=1, position=(-3, 2.0, 0), color=#3aa0ff)
+    b = Cube(width=1, height=4, depth=1, position=(-1, 2.0, 0), color=#5ccfff)
+    c = Cube(width=1, height=4, depth=1, position=( 1, 2.0, 0), color=#ff5577)
+    d = Cube(width=1, height=4, depth=1, position=( 3, 2.0, 0), color=gold)
+}
+
+animate {
+    duration = 4
+    // a swaps with d (the smallest with the largest), b swaps with c.
+    a.position = anim(t, (-3, 2.0, 0), ( 3, 2.0, 0), 4, easing=ease_in_out)
+    d.position = anim(t, ( 3, 2.0, 0), (-3, 2.0, 0), 4, easing=ease_in_out)
+    b.position = anim(t, (-1, 2.0, 0), ( 1, 2.0, 0), 4, easing=ease_in_out)
+    c.position = anim(t, ( 1, 2.0, 0), (-1, 2.0, 0), 4, easing=ease_in_out)
+}

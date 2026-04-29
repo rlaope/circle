@@ -1,0 +1,28 @@
+// Travelling wave — a row of spheres rising sequentially using
+// per-sphere `anim(...)` durations as a phase offset. The whole
+// animation loops every `duration` seconds via the renderer.
+
+scene {
+    Plane(width=24, depth=8, position=(0, 0, 0), color=#0a0a18)
+
+    s0 = Sphere(radius=0.4, position=(-9, 1, 0), color=#3aa0ff)
+    s1 = Sphere(radius=0.4, position=(-6, 1, 0), color=#5ccfff)
+    s2 = Sphere(radius=0.4, position=(-3, 1, 0), color=#7ae0ff)
+    s3 = Sphere(radius=0.4, position=( 0, 1, 0), color=#ffffff)
+    s4 = Sphere(radius=0.4, position=( 3, 1, 0), color=#7ae0ff)
+    s5 = Sphere(radius=0.4, position=( 6, 1, 0), color=#5ccfff)
+    s6 = Sphere(radius=0.4, position=( 9, 1, 0), color=#3aa0ff)
+}
+
+animate {
+    // Each sphere reaches its peak at a different fraction of the
+    // animation, producing a left-to-right travelling crest.
+    duration = 4
+    s0.position = anim(t, (-9, 1, 0), (-9, 5, 0), 1.0, easing=ease_in_out)
+    s1.position = anim(t, (-6, 1, 0), (-6, 5, 0), 1.4, easing=ease_in_out)
+    s2.position = anim(t, (-3, 1, 0), (-3, 5, 0), 1.8, easing=ease_in_out)
+    s3.position = anim(t, ( 0, 1, 0), ( 0, 5, 0), 2.2, easing=ease_in_out)
+    s4.position = anim(t, ( 3, 1, 0), ( 3, 5, 0), 2.6, easing=ease_in_out)
+    s5.position = anim(t, ( 6, 1, 0), ( 6, 5, 0), 3.0, easing=ease_in_out)
+    s6.position = anim(t, ( 9, 1, 0), ( 9, 5, 0), 3.4, easing=ease_in_out)
+}

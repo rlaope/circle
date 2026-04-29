@@ -240,6 +240,13 @@ The suite covers grammar, AST equality, scope rules, module resolution
 A full spec of the `.crl` syntax — lexical tokens, grammar, scope
 rules, errors — lives in [docs/LANGUAGE.md](docs/LANGUAGE.md).
 
+## Animated demos
+
+Six short animated scenes are in [`examples/anim/`](examples/anim/)
+and walked through with screenshots in
+[`docs/gallery.md`](docs/gallery.md): planet orbit, sorting bars, a
+spinning 3×3 grid, a travelling wave, bouncing balls, and a car flock.
+
 ## Editor support
 
 A VSCode extension scaffold ships in this repo at

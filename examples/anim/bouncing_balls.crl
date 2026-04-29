@@ -1,0 +1,22 @@
+// Bouncing balls — five spheres falling onto a plane with the
+// `bounce` easing curve. Each ball has a different start height
+// and a slightly different duration to break the cadence.
+
+scene {
+    Plane(width=20, depth=8, position=(0, 0, 0), color=#0a0a18)
+
+    b0 = Sphere(radius=0.6, position=(-6, 8, 0), color=#ff5577)
+    b1 = Sphere(radius=0.6, position=(-3, 7, 0), color=gold)
+    b2 = Sphere(radius=0.6, position=( 0, 9, 0), color=#3aa0ff)
+    b3 = Sphere(radius=0.6, position=( 3, 7, 0), color=#7aee9d)
+    b4 = Sphere(radius=0.6, position=( 6, 8, 0), color=#c585ff)
+}
+
+animate {
+    duration = 3
+    b0.position = anim(t, (-6, 8, 0), (-6, 0.6, 0), 2.6, easing=bounce)
+    b1.position = anim(t, (-3, 7, 0), (-3, 0.6, 0), 2.4, easing=bounce)
+    b2.position = anim(t, ( 0, 9, 0), ( 0, 0.6, 0), 2.8, easing=bounce)
+    b3.position = anim(t, ( 3, 7, 0), ( 3, 0.6, 0), 2.5, easing=bounce)
+    b4.position = anim(t, ( 6, 8, 0), ( 6, 0.6, 0), 2.7, easing=bounce)
+}

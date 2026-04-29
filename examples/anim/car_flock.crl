@@ -1,0 +1,22 @@
+// A flock of identical car bodies driving past.
+//
+// v0.3 only animates per-leaf attributes, so each "car" here is a
+// single labelled Cube body. The flock idea — many identical
+// instances on staggered timings — still comes through.
+
+scene {
+    Plane(width=40, depth=20, position=(0, 0, 0), color=#0a0a18)
+
+    car_a = Cube(width=4, height=1.5, depth=2, position=(-15, 0.75, -4), color=#3aa0ff)
+    car_b = Cube(width=4, height=1.5, depth=2, position=(-15, 0.75,  0), color=#ff5577)
+    car_c = Cube(width=4, height=1.5, depth=2, position=(-15, 0.75,  4), color=gold)
+    car_d = Cube(width=4, height=1.5, depth=2, position=(-22, 0.75,  4), color=#7aee9d)
+}
+
+animate {
+    duration = 5
+    car_a.position = anim(t, (-15, 0.75, -4), (15, 0.75, -4), 5)
+    car_b.position = anim(t, (-15, 0.75,  0), (15, 0.75,  0), 4.4, easing=ease_in_out)
+    car_c.position = anim(t, (-15, 0.75,  4), (15, 0.75,  4), 4.8)
+    car_d.position = anim(t, (-22, 0.75,  4), (15, 0.75,  4), 5, easing=ease_in)
+}
