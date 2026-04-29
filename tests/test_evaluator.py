@@ -240,3 +240,34 @@ def test_plane_renders_with_translation(tmp_path: Path):
     assert tuple(nodes[1].transform[3, :3]) == (5.0, 1.0, -2.0)
     # Default color falls back when omitted.
     assert nodes[1].color == pytest.approx((0.85, 0.85, 0.9))
+
+
+def test_cone_apex_and_base_geometry(tmp_path: Path):
+    entry = tmp_path / "main.crl"
+    _write(entry, """
+        scene {
+            Cone(radius=2, height=5, position=(3, 0, 0), color=#ff8800)
+        }
+    """)
+    nodes = evaluate(load(entry))
+    assert len(nodes) == 1
+    node = nodes[0]
+    # Translation lands on the cone's local origin (base centre).
+    assert tuple(node.transform[3, :3]) == (3.0, 0.0, 0.0)
+
+    ys = node.vertices[:, 1]
+    # Apex sits at y == height; base ring + base centre sit at y == 0.
+    assert float(ys.max()) == pytest.approx(5.0)
+    assert float(ys.min()) == pytest.approx(0.0)
+
+    # Base ring radius should be `radius`.
+    base_xz = node.vertices[ys == 0.0][:, [0, 2]]
+    radii = np.sqrt(np.sum(base_xz ** 2, axis=1))
+    assert radii.max() == pytest.approx(2.0, abs=1e-5)
+
+    # Side normals must have a positive Y component (slanted outward+up).
+    apex_normals = node.normals[ys == 5.0]
+    assert np.all(apex_normals[:, 1] > 0.0)
+    # Side normals should be unit length.
+    side_lens = np.linalg.norm(apex_normals, axis=1)
+    assert np.allclose(side_lens, 1.0, atol=1e-5)

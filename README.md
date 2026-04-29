@@ -80,6 +80,7 @@ That single file produces the screenshot above.
 | `Cylinder` | `radius`, `height`                     | `position`, `color`, `rotation`                            |
 | `Circle`   | `radius`                               | `tube` (default `radius * 0.1`), `position`, `color`, `rotation` |
 | `Plane`    | `width`, `depth`                       | `position`, `color`, `rotation`                            |
+| `Cone`     | `radius`, `height`                     | `position`, `color`, `rotation`                            |
 | `Group`    | (none — uses block body)               | `position`, `rotation`                                     |
 
 `Circle` is a true 3D torus: `radius` is the distance from the centre of

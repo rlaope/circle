@@ -157,6 +157,59 @@ def cylinder(radius: float, height: float, segments: int = 32) -> Mesh:
     )
 
 
+def cone(radius: float, height: float, segments: int = 32) -> Mesh:
+    """Cone with apex at (0, height, 0) and base disk centred at origin.
+
+    Per-side flat normals (one normal per slant triangle, Cube/Cylinder
+    style). Base disk normal points -Y. Default 32 segments around the
+    base.
+    """
+    verts: list[tuple[float, float, float]] = []
+    norms: list[tuple[float, float, float]] = []
+    indices: list[int] = []
+
+    slant = math.sqrt(height * height + radius * radius)
+    if slant == 0.0:
+        radial_n = 0.0
+        ny = 1.0
+    else:
+        radial_n = height / slant
+        ny = radius / slant
+
+    # Side: per-segment flat triangle (apex + two base ring points).
+    for seg in range(segments):
+        t0 = 2 * math.pi * seg / segments
+        t1 = 2 * math.pi * (seg + 1) / segments
+        tm = (t0 + t1) / 2.0
+        normal = (radial_n * math.cos(tm), ny, radial_n * math.sin(tm))
+        base_idx = len(verts)
+        verts.append((0.0, height, 0.0))
+        verts.append((radius * math.cos(t0), 0.0, radius * math.sin(t0)))
+        verts.append((radius * math.cos(t1), 0.0, radius * math.sin(t1)))
+        norms.append(normal)
+        norms.append(normal)
+        norms.append(normal)
+        indices += [base_idx, base_idx + 2, base_idx + 1]
+
+    # Base disk: triangle fan around (0, 0, 0) with -Y normal.
+    base_center = len(verts)
+    verts.append((0.0, 0.0, 0.0))
+    norms.append((0.0, -1.0, 0.0))
+    base_start = len(verts)
+    for seg in range(segments + 1):
+        theta = 2 * math.pi * seg / segments
+        verts.append((radius * math.cos(theta), 0.0, radius * math.sin(theta)))
+        norms.append((0.0, -1.0, 0.0))
+    for seg in range(segments):
+        indices += [base_center, base_start + seg + 1, base_start + seg]
+
+    return (
+        np.array(verts, dtype="f4"),
+        np.array(indices, dtype="u4"),
+        np.array(norms, dtype="f4"),
+    )
+
+
 def torus(
     radius: float,
     tube: float,

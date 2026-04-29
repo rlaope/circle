@@ -259,6 +259,7 @@ Group(position=(10, 0, 0)) {
 | `Cylinder` | `radius`, `height`         | `position`, `rotation`, `color`                                  |
 | `Circle`   | `radius`                   | `tube` (default `radius * 0.1`), `position`, `rotation`, `color` |
 | `Plane`    | `width`, `depth`           | `position`, `rotation`, `color`                                  |
+| `Cone`     | `radius`, `height`         | `position`, `rotation`, `color`                                  |
 | `Group`    | (none — uses block body)   | `position`, `rotation`                                           |
 
 Standard argument semantics:
@@ -273,6 +274,10 @@ the ring.
 
 `Plane` is a flat XZ quad at `y=0` with normal `+Y`, sized `width`
 along X and `depth` along Z. Use `rotation` to stand it up as a wall.
+
+`Cone` has its apex at `(0, height, 0)` and its base disk centred at
+the origin with normal `-Y`. The slant uses 32 segments with per-side
+flat normals (matching `Cube` / `Cylinder` shading).
 
 ---
 
