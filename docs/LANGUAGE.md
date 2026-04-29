@@ -328,7 +328,63 @@ Direct or indirect recursion (`A` instantiates `B` which instantiates
 
 ---
 
-## 10. Errors
+## 10. Animation
+
+A program may contain at most one `animate { ... }` block alongside
+the `scene { ... }` block. The animate block declares a single
+`duration = <expr>` (in seconds) plus a list of *target rules* that
+override the **position**, **rotation**, or **color** of named scene
+leaves at frame time.
+
+```crl
+scene {
+    cube = Cube(width=1, height=1, depth=1, color=red)
+    ball = Sphere(radius=0.5, position=(3, 0, 0), color=blue)
+}
+
+animate {
+    duration = 4
+    cube.position = anim(t, (0, 0, 0), (10, 0, 0), 4, easing=ease_in_out)
+    ball.color    = anim(t, (0, 0, 1), (1, 0, 0), 4)
+}
+```
+
+Rule semantics:
+
+- The left-hand side is `<label>.<attr>` where `<label>` is the
+  binding name from a scene assignment (`label = Cube(...)`) and
+  `<attr>` is `position`, `rotation`, or `color`.
+- The right-hand side is any expression. Inside the animate block
+  the implicit identifier `t` resolves to the current frame's time
+  in seconds, in `[0, duration)`.
+- The static evaluator detects rules that target unknown labels and
+  raises `EvalError` at compile time.
+
+### `anim()` — time-keyed interpolation
+
+```
+anim(t, start, end, duration[, easing=NAME])
+```
+
+Linearly interpolates from `start` to `end` over `duration` seconds,
+optionally shaped by an easing function. `start` / `end` may be
+numbers or tuples of equal length; tuples interpolate component-wise.
+
+Supported easings: `linear` (default), `ease_in`, `ease_out`,
+`ease_in_out`, `bounce`. Unknown names raise `EvalError`.
+
+For convenience, `anim()` clamps progress to `[0, 1]`, so values of
+`t` past `duration` snap to `end`.
+
+### Frame loop
+
+The renderer loops the animation by default: `t = elapsed % duration`.
+For headless export, see `circlelib record` (v0.3) and the existing
+`--export-png` flag (which renders one frame at `t = 0`).
+
+---
+
+## 11. Errors
 
 Common categorical errors:
 
@@ -345,7 +401,7 @@ Common categorical errors:
 
 ---
 
-## 11. What the language does NOT have (yet)
+## 12. What the language does NOT have (yet)
 
 Tracked in [ROADMAP.md](ROADMAP.md). The current language has, by
 design, **no**:
@@ -356,7 +412,8 @@ design, **no**:
 - Component parameters in expression positions (only `position` /
   `rotation` are inherited as the parent transform).
 - First-class component values (you cannot pass `Cube` as an argument).
-- Animation primitives — see ROADMAP v0.3.
+- Mesh-shape animation — only `position` / `rotation` / `color` are
+  re-evaluated per frame in v0.3.
 - Module-level identifier export beyond the alias system.
 
 Each of these is intentionally absent until a milestone justifies it.

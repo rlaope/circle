@@ -11,6 +11,9 @@ from pathlib import Path
 from lark import Lark, Transformer, v_args
 
 from circlelib.ast.nodes import (
+    AnimCall,
+    Animate,
+    AnimateRule,
     Argument,
     Assignment,
     BinaryOp,
@@ -80,6 +83,15 @@ class _ToAst(Transformer):
 
     def rgb4(self, r, g, b, a):
         return RgbCall(components=(r, g, b, a))
+
+    def anim4(self, t, start, end, duration):
+        return AnimCall(t=t, start=start, end=end, duration=duration, easing="linear")
+
+    def anim5(self, t, start, end, duration, easing_name):
+        return AnimCall(
+            t=t, start=start, end=end, duration=duration,
+            easing=str(easing_name),
+        )
 
     def tuple_lit(self, *items):
         return TupleLit(tuple(items))
@@ -171,6 +183,40 @@ class _ToAst(Transformer):
     def scene_def(self, *body):
         return Scene(body=list(body))
 
+    def animate_def(self, *items):
+        # First pass: pull `duration = expr` binding (must exist exactly
+        # once); the rest are AnimateRule instances.
+        duration_expr = None
+        rules: list[AnimateRule] = []
+        for it in items:
+            if isinstance(it, AnimateRule):
+                rules.append(it)
+            elif isinstance(it, tuple) and len(it) == 2 and it[0] == "__binding__":
+                _, (name, value) = it
+                if name == "duration":
+                    if duration_expr is not None:
+                        raise SyntaxError(
+                            "animate { ... } may only declare 'duration' once"
+                        )
+                    duration_expr = value
+                else:
+                    raise SyntaxError(
+                        f"animate {{ ... }} only supports 'duration ='; got '{name} ='"
+                    )
+        if duration_expr is None:
+            raise SyntaxError("animate { ... } must declare 'duration = <expr>'")
+        return Animate(duration=duration_expr, rules=rules)
+
+    def anim_stmt(self, child):
+        return child
+
+    def anim_binding(self, name, value):
+        # Sentinel tuple distinguishes module-style bindings from rules.
+        return ("__binding__", (str(name), value))
+
+    def anim_rule(self, label, attr, value):
+        return AnimateRule(label=str(label), attr=str(attr), value=value)
+
     def top_item(self, item):
         return item
 
@@ -178,6 +224,7 @@ class _ToAst(Transformer):
     def start(self, items):
         module = Module()
         scenes: list[Scene] = []
+        animates: list[Animate] = []
         for it in items:
             if isinstance(it, Import):
                 module.imports.append(it)
@@ -187,8 +234,12 @@ class _ToAst(Transformer):
                 scenes.append(it)
             elif isinstance(it, Assignment):
                 module.bindings.append(it)
+            elif isinstance(it, Animate):
+                animates.append(it)
         module.scene = scenes[0] if scenes else None
+        module.animate = animates[0] if animates else None
         module.__circlelib_scene_count__ = len(scenes)
+        module.__circlelib_animate_count__ = len(animates)
         return module
 
 
@@ -197,6 +248,8 @@ def parse_source(source: str) -> Module:
     module = _ToAst().transform(tree)
     if getattr(module, "__circlelib_scene_count__", 0) > 1:
         raise SyntaxError("only one scene block is allowed per file")
+    if getattr(module, "__circlelib_animate_count__", 0) > 1:
+        raise SyntaxError("only one animate block is allowed per file")
     return module
 
 

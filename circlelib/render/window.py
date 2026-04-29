@@ -1,19 +1,21 @@
 """GLFW window + main loop.
 
-`run_window(nodes)` opens a window, uploads the scene to the GPU, and
+`run_window(scene)` opens a window, uploads the scene to the GPU, and
 runs an interactive orbit-camera loop until the window is closed.
+For animated programs the loop calls the compiled-scene callable each
+frame with the current time (looped over the scene's duration).
 """
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Union
 
 import glfw
 import moderngl
 
 from circlelib.render.camera import OrbitCamera
 from circlelib.render.renderer import Renderer
-from circlelib.runtime.evaluator import SceneNode
+from circlelib.runtime.evaluator import CompiledScene, SceneNode
 
 
 def _init_glfw(title: str, width: int, height: int):
@@ -34,17 +36,34 @@ def _init_glfw(title: str, width: int, height: int):
 
 
 def run_window(
-    nodes: List[SceneNode],
+    scene: Union[CompiledScene, List[SceneNode]],
     *,
     title: str = "circlelib",
     width: int = 960,
     height: int = 720,
 ) -> None:
+    """Open a window and render `scene`.
+
+    Accepts either a `CompiledScene` (with optional animation) or a
+    plain list of `SceneNode` for backward compatibility. Animated
+    scenes loop over their declared duration.
+    """
     window = _init_glfw(title, width, height)
     ctx = moderngl.create_context()
     renderer = Renderer(ctx)
+
+    if isinstance(scene, CompiledScene):
+        compiled = scene
+        animated = compiled.is_animated
+        nodes = compiled(0.0)
+    else:
+        compiled = None
+        animated = False
+        nodes = scene
     renderer.upload(nodes)
+
     camera = OrbitCamera()
+    start_time = glfw.get_time()
 
     state = {"dragging": False, "last_x": 0.0, "last_y": 0.0}
 
@@ -77,6 +96,10 @@ def run_window(
         if fb_h == 0:
             glfw.poll_events()
             continue
+        if animated and compiled is not None:
+            elapsed = glfw.get_time() - start_time
+            t = elapsed % compiled.duration if compiled.duration > 0 else 0.0
+            renderer.update(compiled(t))
         ctx.viewport = (0, 0, fb_w, fb_h)
         view = camera.view_matrix()
         proj = camera.projection_matrix(fb_w / fb_h)

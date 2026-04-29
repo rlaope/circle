@@ -1,0 +1,19 @@
+// A planet orbiting a sun, demonstrating animate {} + anim() with easing.
+//
+// Try it live:
+//   circlelib run examples/anim/orbit.crl
+// Headless smoke:
+//   circlelib run examples/anim/orbit.crl --check
+
+scene {
+    Plane(width=20, depth=20, position=(0, 0, 0), color=#0a0a18)
+    sun    = Sphere(radius=1.5, position=(0, 1, 0), color=gold)
+    planet = Sphere(radius=0.5, position=(6, 1, 0), color=#3aa0ff)
+}
+
+animate {
+    duration = 6
+    planet.position = anim(t, (6, 1, 0), (-6, 1, 0), 6, easing=ease_in_out)
+    planet.color    = anim(t, (0.23, 0.63, 1.0), (1.0, 0.4, 0.27), 6)
+    sun.color       = anim(t, (1.0, 0.84, 0.0), (1.0, 0.55, 0.2), 6, easing=ease_in_out)
+}

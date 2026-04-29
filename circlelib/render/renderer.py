@@ -165,6 +165,20 @@ class Renderer:
                 _GpuMesh(vao=vao, transform=node.transform, color=node.color)
             )
 
+    def update(self, nodes: List[SceneNode]) -> None:
+        """Per-frame refresh of transforms / colors only.
+
+        Falls back to a full re-upload if the node count changes
+        (shouldn't happen in v0.3 — animations only mutate
+        position/rotation/color, never topology).
+        """
+        if len(nodes) != len(self._meshes):
+            self.upload(nodes)
+            return
+        for mesh, node in zip(self._meshes, nodes):
+            mesh.transform = node.transform
+            mesh.color = node.color
+
     def draw(self, view: np.ndarray, proj: np.ndarray) -> None:
         # Black background.
         self.ctx.clear(0.0, 0.0, 0.0, 1.0)

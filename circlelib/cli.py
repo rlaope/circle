@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 from circlelib import __version__
-from circlelib.runtime.evaluator import evaluate
+from circlelib.runtime.evaluator import compile_program
 from circlelib.runtime.resolver import load
 
 
@@ -49,8 +49,17 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     if args.command == "run":
         program = load(args.file)
-        nodes = evaluate(program)
-        print(f"loaded {len(program.modules)} module(s), {len(nodes)} node(s)")
+        scene = compile_program(program)
+        # Initial node list at t=0 just for a quick "loaded N node(s)"
+        # diagnostic; the window/PNG paths will (re-)evaluate frames.
+        initial = scene(0.0)
+        if scene.is_animated:
+            print(
+                f"loaded {len(program.modules)} module(s), "
+                f"{len(initial)} node(s) (animate duration={scene.duration}s)"
+            )
+        else:
+            print(f"loaded {len(program.modules)} module(s), {len(initial)} node(s)")
         if args.check:
             return 0
         if args.export_png is not None:
@@ -58,14 +67,14 @@ def main(argv: list[str] | None = None) -> int:
             from circlelib.render.offscreen import render_to_png
 
             out = render_to_png(
-                nodes, args.export_png, width=args.width, height=args.height
+                initial, args.export_png, width=args.width, height=args.height
             )
             print(f"wrote {out}")
             return 0
         # Imported lazily so `--check` works without a display / GPU.
         from circlelib.render.window import run_window
 
-        run_window(nodes, width=args.width, height=args.height)
+        run_window(scene, width=args.width, height=args.height)
         return 0
     return 1
 

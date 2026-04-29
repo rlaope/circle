@@ -15,11 +15,16 @@ cd "$ROOT"
 echo "==> pytest"
 pytest -q
 
-# 2) Headless smoke run of every example.
+# 2) Headless smoke run of every example (recurses into subdirs).
+# Use `find` so this stays portable on Bash 3.2 (macOS default) where
+# `globstar` and `mapfile` are unavailable.
 echo "==> example smoke (--check)"
-shopt -s nullglob
-examples=(examples/*.crl)
-shopt -u nullglob
+examples=()
+# Skip examples/modules/* — those files are imported by other scenes
+# and contain no `scene { ... }` block of their own.
+while IFS= read -r line; do
+    examples+=("$line")
+done < <(find examples -type f -name "*.crl" -not -path "examples/modules/*" | sort)
 
 if [ ${#examples[@]} -eq 0 ]; then
     echo "no examples found under examples/" >&2

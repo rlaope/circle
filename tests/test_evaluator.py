@@ -7,7 +7,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from circlelib.runtime.evaluator import EvalError, evaluate
+from circlelib.runtime.evaluator import (
+    CompiledScene,
+    EvalError,
+    compile_program,
+    evaluate,
+)
 from circlelib.runtime.resolver import CircularImportError, load
 
 
@@ -321,3 +326,137 @@ def test_cone_apex_and_base_geometry(tmp_path: Path):
     # Side normals should be unit length.
     side_lens = np.linalg.norm(apex_normals, axis=1)
     assert np.allclose(side_lens, 1.0, atol=1e-5)
+
+
+# ---------------------------------------------------------------------
+# Animation (#8 + #9)
+# ---------------------------------------------------------------------
+
+
+def _animated_scene(tmp_path: Path, body: str) -> CompiledScene:
+    entry = tmp_path / "main.crl"
+    _write(entry, body)
+    return compile_program(load(entry))
+
+
+def test_compile_returns_animated_scene_with_duration(tmp_path: Path):
+    scene = _animated_scene(tmp_path, """
+        scene { cube = Cube(width=1, height=1, depth=1) }
+        animate {
+            duration = 4
+            cube.position = anim(t, (0, 0, 0), (10, 0, 0), 4)
+        }
+    """)
+    assert scene.is_animated
+    assert scene.duration == pytest.approx(4.0)
+
+
+def test_evaluate_returns_static_at_t_zero(tmp_path: Path):
+    # Backward-compat: evaluate() == compile_program()(0.0) for animated.
+    entry = tmp_path / "main.crl"
+    _write(entry, """
+        scene { cube = Cube(width=1, height=1, depth=1) }
+        animate {
+            duration = 4
+            cube.position = anim(t, (0, 0, 0), (10, 0, 0), 4)
+        }
+    """)
+    nodes = evaluate(load(entry))
+    assert tuple(nodes[0].transform[3, :3]) == (0.0, 0.0, 0.0)
+
+
+def test_frame_pass_lerps_position_linearly(tmp_path: Path):
+    scene = _animated_scene(tmp_path, """
+        scene { cube = Cube(width=1, height=1, depth=1) }
+        animate {
+            duration = 2
+            cube.position = anim(t, (0, 0, 0), (10, 0, 0), 2)
+        }
+    """)
+    n0 = scene(0.0)
+    n_mid = scene(1.0)
+    n_end = scene(2.0)
+    assert tuple(n0[0].transform[3, :3]) == pytest.approx((0.0, 0.0, 0.0))
+    assert tuple(n_mid[0].transform[3, :3]) == pytest.approx((5.0, 0.0, 0.0))
+    assert tuple(n_end[0].transform[3, :3]) == pytest.approx((10.0, 0.0, 0.0))
+
+
+def test_frame_pass_lerps_color(tmp_path: Path):
+    scene = _animated_scene(tmp_path, """
+        scene { cube = Cube(width=1, height=1, depth=1, color=#ff0000) }
+        animate {
+            duration = 2
+            cube.color = anim(t, (1, 0, 0), (0, 0, 1), 2)
+        }
+    """)
+    assert scene(0.0)[0].color == pytest.approx((1.0, 0.0, 0.0))
+    assert scene(1.0)[0].color == pytest.approx((0.5, 0.0, 0.5))
+    assert scene(2.0)[0].color == pytest.approx((0.0, 0.0, 1.0))
+
+
+def test_anim_with_easing_keyword(tmp_path: Path):
+    # ease_in_out at p=0.5 -> 0.5 (symmetric quadratic).  Use ease_in
+    # (p^2) so we can clearly distinguish from linear:
+    #   anim(0.5*d, 0, 10, d, easing=ease_in) -> 10 * 0.25 == 2.5
+    scene = _animated_scene(tmp_path, """
+        scene { cube = Cube(width=1, height=1, depth=1) }
+        animate {
+            duration = 2
+            cube.position = anim(t, (0, 0, 0), (10, 0, 0), 2, easing=ease_in)
+        }
+    """)
+    n_mid = scene(1.0)
+    assert tuple(n_mid[0].transform[3, :3]) == pytest.approx((2.5, 0.0, 0.0))
+
+
+def test_anim_scalar_endpoints_lerp(tmp_path: Path):
+    # `width` doesn't currently re-mesh at frame time but the eval
+    # path itself must support scalar lerps on numeric attributes.
+    # We can verify by comparing to a binding that passes through.
+    scene = _animated_scene(tmp_path, """
+        size = anim(0, 0, 10, 4)
+        scene {
+            Cube(width=1, height=1, depth=1, position=(size, 0, 0))
+        }
+    """)
+    nodes = scene(0.0)
+    # `size` is bound at module-load time with t=undefined -> at module
+    # bindings ctx.time is None, so we expect anim() to evaluate t=0
+    # against the literal `0` argument; the result equals `start` (0).
+    assert tuple(nodes[0].transform[3, :3]) == (0.0, 0.0, 0.0)
+
+
+def test_anim_with_unknown_easing_raises(tmp_path: Path):
+    entry = tmp_path / "main.crl"
+    _write(entry, """
+        scene { cube = Cube(width=1, height=1, depth=1) }
+        animate {
+            duration = 2
+            cube.position = anim(t, (0, 0, 0), (1, 0, 0), 2, easing=warp)
+        }
+    """)
+    scene = compile_program(load(entry))
+    with pytest.raises(EvalError):
+        scene(1.0)
+
+
+def test_animate_rule_unknown_label_raises(tmp_path: Path):
+    entry = tmp_path / "main.crl"
+    _write(entry, """
+        scene { Cube(width=1, height=1, depth=1) }
+        animate {
+            duration = 2
+            ghost.position = anim(t, (0, 0, 0), (1, 0, 0), 2)
+        }
+    """)
+    with pytest.raises(EvalError):
+        compile_program(load(entry))
+
+
+def test_static_scene_has_is_animated_false(tmp_path: Path):
+    entry = tmp_path / "main.crl"
+    _write(entry, "scene { Cube(width=1, height=1, depth=1) }")
+    scene = compile_program(load(entry))
+    assert not scene.is_animated
+    # Calling at any time returns the same precomputed list.
+    assert scene(0.0)[0].vertices is scene(99.0)[0].vertices

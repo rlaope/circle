@@ -21,6 +21,7 @@ Expr = Union[
     "Call",
     "BinaryOp",
     "UnaryOp",
+    "AnimCall",
 ]
 
 
@@ -119,9 +120,36 @@ class Import:
     alias: str
 
 
+@dataclass(frozen=True)
+class AnimCall:
+    # anim(t, start, end, duration[, easing=NAME])
+    t: "Expr"
+    start: "Expr"
+    end: "Expr"
+    duration: "Expr"
+    easing: str = "linear"
+
+
+@dataclass(frozen=True)
+class AnimateRule:
+    # `label.attr = expr` inside an `animate { ... }` block.
+    label: str
+    attr: str
+    value: "Expr"
+
+
+@dataclass
+class Animate:
+    # `animate { duration = 5; ... rules ... }`. `duration` is an
+    # expression that resolves to a float at static-pass time.
+    duration: "Expr"
+    rules: List[AnimateRule] = field(default_factory=list)
+
+
 @dataclass
 class Module:
     imports: List[Import] = field(default_factory=list)
     components: List[Component] = field(default_factory=list)
     bindings: List[Assignment] = field(default_factory=list)
     scene: Optional[Scene] = None
+    animate: Optional[Animate] = None

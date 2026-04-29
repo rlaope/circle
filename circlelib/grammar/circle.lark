@@ -12,6 +12,7 @@ top_item: import_stmt
         | component_def
         | scene_def
         | top_binding
+        | animate_def
 
 import_stmt: "import" STRING "as" NAME
 
@@ -20,6 +21,14 @@ top_binding: NAME "=" expr
 component_def: "component" NAME "{" stmt* "}"
 
 scene_def: "scene" "{" stmt* "}"
+
+animate_def: "animate" "{" anim_stmt* "}"
+
+anim_stmt: anim_binding
+         | anim_rule
+
+anim_binding: NAME "=" expr
+anim_rule: NAME "." NAME "=" expr
 
 stmt: assignment
     | call_stmt
@@ -54,6 +63,7 @@ arg: NAME "=" expr
 
 ?atom: tuple_lit
      | rgb_call
+     | anim_call
      | NUMBER          -> number_lit
      | STRING          -> string_lit
      | HEXCOLOR        -> color_lit
@@ -63,6 +73,9 @@ arg: NAME "=" expr
 
 rgb_call: "rgb"  "(" expr "," expr "," expr ")"           -> rgb3
         | "rgba" "(" expr "," expr "," expr "," expr ")"  -> rgb4
+
+anim_call: "anim" "(" expr "," expr "," expr "," expr ")"                          -> anim4
+         | "anim" "(" expr "," expr "," expr "," expr "," "easing" "=" NAME ")"    -> anim5
 
 tuple_lit: "(" expr ("," expr)+ ","? ")"
 

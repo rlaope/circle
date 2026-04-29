@@ -1,24 +1,33 @@
-"""Evaluate a loaded program into a flat list of SceneNodes.
+"""Evaluate a loaded program into renderable SceneNodes.
 
-A SceneNode is a leaf with a mesh + a world-space transform + a color.
-Components are inlined (their bodies expand) at evaluation time. Group
-blocks compose transforms onto their children.
+The evaluator runs in two phases:
 
-This evaluator is intentionally simple: no animations, no expressions
-beyond literals/identifiers. The structure leaves room for an
-``animate`` pass and richer expressions later.
+1. **Static pass** — walks the entry scene once and produces a list
+   of ``_LeafState`` records. Each leaf carries the mesh, the parent
+   transform composed from enclosing Groups / components, and a copy
+   of the call's keyword arguments (position, rotation, color, …).
+2. **Frame pass** — given a time value `t`, applies any matching
+   `animate { label.attr = expr }` overrides to a leaf's args, rebuilds
+   its local transform, and emits a ``SceneNode``.
+
+For scenes without an ``animate { ... }`` block the frame pass simply
+emits the same nodes every call. For animated scenes the renderer
+calls ``compile_program(program)(t)`` per frame.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 from pyrr import Matrix44, Quaternion, Vector3
 
 from circlelib.ast.nodes import (
+    AnimCall,
+    Animate,
+    AnimateRule,
     Argument,
     Assignment,
     BinaryOp,
@@ -38,6 +47,7 @@ from circlelib.ast.nodes import (
 )
 from circlelib.runtime import primitives
 from circlelib.runtime.colors import lookup_named_color
+from circlelib.runtime.easing import resolve_easing
 from circlelib.runtime.resolver import LoadedProgram
 
 
@@ -54,59 +64,75 @@ class SceneNode:
     alpha: float = 1.0
 
 
+@dataclass
+class _LeafState:
+    """Static-time descriptor for one rendered primitive instance.
+
+    Mesh data is fixed for v0.3. ``parent_transform`` is the world
+    transform composed by enclosing Groups / components. ``local_args``
+    is a copy of the call's evaluated keyword args; the frame pass
+    overrides ``position`` / ``rotation`` / ``color`` from animate
+    rules and rebuilds the local transform on top of it.
+    """
+
+    vertices: np.ndarray
+    indices: np.ndarray
+    normals: np.ndarray
+    parent_transform: np.ndarray
+    local_args: Dict[str, object]
+    label: Optional[str] = None
+
+
 class EvalError(RuntimeError):
     pass
 
 
 # Builtins ----------------------------------------------------------
+# Each builtin returns just the mesh `(verts, indices, normals)` tuple.
+# The leaf's transform / color is composed at frame time from the
+# call's `local_args` (potentially overridden by an animate rule).
 
-def _builtin_cube(args: dict) -> "SceneNode":
-    v, i, n = primitives.cube(
+def _builtin_cube(args: dict):
+    return primitives.cube(
         _need_number(args, "width", "Cube"),
         _need_number(args, "height", "Cube"),
         _need_number(args, "depth", "Cube"),
     )
-    return _make_leaf(v, i, n, args)
 
 
-def _builtin_sphere(args: dict) -> "SceneNode":
-    v, i, n = primitives.sphere(_need_number(args, "radius", "Sphere"))
-    return _make_leaf(v, i, n, args)
+def _builtin_sphere(args: dict):
+    return primitives.sphere(_need_number(args, "radius", "Sphere"))
 
 
-def _builtin_cylinder(args: dict) -> "SceneNode":
-    v, i, n = primitives.cylinder(
+def _builtin_cylinder(args: dict):
+    return primitives.cylinder(
         _need_number(args, "radius", "Cylinder"),
         _need_number(args, "height", "Cylinder"),
     )
-    return _make_leaf(v, i, n, args)
 
 
-def _builtin_circle(args: dict) -> "SceneNode":
+def _builtin_circle(args: dict):
     radius = _need_number(args, "radius", "Circle")
     tube = args.get("tube")
     if tube is None:
         tube = radius * 0.1
     elif not isinstance(tube, (int, float)):
         raise EvalError("Circle: 'tube' must be a number")
-    v, i, n = primitives.torus(radius, float(tube))
-    return _make_leaf(v, i, n, args)
+    return primitives.torus(radius, float(tube))
 
 
-def _builtin_plane(args: dict) -> "SceneNode":
-    v, i, n = primitives.plane(
+def _builtin_plane(args: dict):
+    return primitives.plane(
         _need_number(args, "width", "Plane"),
         _need_number(args, "depth", "Plane"),
     )
-    return _make_leaf(v, i, n, args)
 
 
-def _builtin_cone(args: dict) -> "SceneNode":
-    v, i, n = primitives.cone(
+def _builtin_cone(args: dict):
+    return primitives.cone(
         _need_number(args, "radius", "Cone"),
         _need_number(args, "height", "Cone"),
     )
-    return _make_leaf(v, i, n, args)
 
 
 BUILTINS = {
@@ -155,8 +181,14 @@ def _local_transform(args: dict) -> np.ndarray:
     return np.array(m, dtype="f4")
 
 
-def _make_leaf(verts, indices, normals, args: dict) -> SceneNode:
-    raw = args.get("color", DEFAULT_COLOR)
+def _leaf_to_scene_node(leaf: _LeafState, frame_args: dict) -> SceneNode:
+    """Build a renderable ``SceneNode`` from a leaf and its frame-time args.
+
+    ``frame_args`` is typically ``leaf.local_args`` plus any animate
+    overrides for ``position`` / ``rotation`` / ``color``. Only those
+    three fields are honored at frame time in v0.3.
+    """
+    raw = frame_args.get("color", DEFAULT_COLOR)
     if not isinstance(raw, tuple) or len(raw) not in (3, 4):
         raise EvalError(
             "'color' must be a hex literal, rgb()/rgba(), a named CSS "
@@ -168,11 +200,13 @@ def _make_leaf(verts, indices, normals, args: dict) -> SceneNode:
     else:
         color = (float(raw[0]), float(raw[1]), float(raw[2]))
         alpha = 1.0
+    local = _local_transform(frame_args)
+    transform = np.array(leaf.parent_transform @ local, dtype="f4")
     return SceneNode(
-        vertices=verts,
-        indices=indices,
-        normals=normals,
-        transform=_local_transform(args),
+        vertices=leaf.vertices,
+        indices=leaf.indices,
+        normals=leaf.normals,
+        transform=transform,
         color=color,
         alpha=alpha,
     )
@@ -187,6 +221,7 @@ class _EvalCtx:
     component_stack: List[str] = field(default_factory=list)
     component_env_stack: List[Dict[str, object]] = field(default_factory=list)
     module_envs: Dict[Path, Dict[str, object]] = field(default_factory=dict)
+    time: Optional[float] = None  # bound only inside frame_pass
 
     def lookup(self, name: str):
         # Innermost component scope first, then the current module env,
@@ -197,26 +232,109 @@ class _EvalCtx:
         module_env = self.module_envs.get(self.current_path, {})
         if name in module_env:
             return module_env[name]
+        if name == "t" and self.time is not None:
+            return self.time
         named = lookup_named_color(name)
         if named is not None:
             return named
         raise EvalError(f"undefined name: {name}")
 
 
-def evaluate(program: LoadedProgram) -> List[SceneNode]:
+@dataclass
+class CompiledScene:
+    """Result of `compile_program`. Callable returns a SceneNode list
+    for a given time `t` (seconds). For non-animated scenes it returns
+    the same precomputed list every call.
+    """
+
+    leaves: List[_LeafState]
+    rules_by_label: Dict[str, List[AnimateRule]]
+    duration: float
+    program: LoadedProgram
+
+    def __call__(self, t: float) -> List[SceneNode]:
+        return _frame_pass(self, t)
+
+    @property
+    def is_animated(self) -> bool:
+        return bool(self.rules_by_label)
+
+
+def compile_program(program: LoadedProgram) -> CompiledScene:
+    """Static-pass entry point. Builds a `CompiledScene` callable."""
     if program.entry.scene is None:
         raise EvalError("entry module has no scene block")
     ctx = _EvalCtx(program=program, current_path=program.entry_path)
     _eval_module_bindings(ctx)
     ctx.current_path = program.entry_path
-    nodes: list[SceneNode] = []
+
+    leaves: List[_LeafState] = []
     ctx.component_env_stack.append({})
     try:
         for stmt in program.entry.scene.body:
-            _eval_stmt(stmt, ctx, _identity(), nodes)
+            _eval_stmt(stmt, ctx, _identity(), leaves, label=None)
     finally:
         ctx.component_env_stack.pop()
-    return nodes
+
+    rules_by_label: Dict[str, List[AnimateRule]] = {}
+    duration = 0.0
+    animate = program.entry.animate
+    if animate is not None:
+        ctx.time = None  # `t` undefined while computing duration
+        d_val = _eval_expr(animate.duration, ctx)
+        if not isinstance(d_val, (int, float)) or d_val <= 0:
+            raise EvalError("animate { duration = ... } must be a positive number")
+        duration = float(d_val)
+        for rule in animate.rules:
+            rules_by_label.setdefault(rule.label, []).append(rule)
+        # Sanity: every animate rule must reference a labelled leaf.
+        known_labels = {leaf.label for leaf in leaves if leaf.label is not None}
+        for label in rules_by_label:
+            if label not in known_labels:
+                raise EvalError(
+                    f"animate rule references unknown label '{label}' — "
+                    f"label leaves with `name = Cube(...)` etc. in the scene"
+                )
+
+    return CompiledScene(
+        leaves=leaves,
+        rules_by_label=rules_by_label,
+        duration=duration,
+        program=program,
+    )
+
+
+def _frame_pass(scene: CompiledScene, t: float) -> List[SceneNode]:
+    if not scene.rules_by_label:
+        # Static path: no animate block, just convert each leaf with
+        # its captured args.
+        return [_leaf_to_scene_node(leaf, leaf.local_args) for leaf in scene.leaves]
+
+    ctx = _EvalCtx(program=scene.program, current_path=scene.program.entry_path)
+    _eval_module_bindings(ctx)
+    ctx.current_path = scene.program.entry_path
+    ctx.time = float(t)
+    ctx.component_env_stack.append({})
+    try:
+        out: List[SceneNode] = []
+        for leaf in scene.leaves:
+            args = dict(leaf.local_args)
+            rules = scene.rules_by_label.get(leaf.label or "", [])
+            for rule in rules:
+                args[rule.attr] = _eval_expr(rule.value, ctx)
+            out.append(_leaf_to_scene_node(leaf, args))
+        return out
+    finally:
+        ctx.component_env_stack.pop()
+
+
+def evaluate(program: LoadedProgram) -> List[SceneNode]:
+    """Backward-compat one-shot evaluation at t = 0.0.
+
+    For animated scenes call ``compile_program(program)`` and invoke
+    the result with the current time instead.
+    """
+    return compile_program(program)(0.0)
 
 
 def _eval_module_bindings(ctx: _EvalCtx) -> None:
@@ -231,16 +349,23 @@ def _eval_module_bindings(ctx: _EvalCtx) -> None:
             env[binding.name] = _eval_expr(binding.value, ctx)
 
 
-def _eval_stmt(stmt, ctx: _EvalCtx, parent: np.ndarray, out: List[SceneNode]) -> None:
+def _eval_stmt(
+    stmt,
+    ctx: _EvalCtx,
+    parent: np.ndarray,
+    out: List[_LeafState],
+    label: Optional[str] = None,
+) -> None:
     if isinstance(stmt, Call):
-        _eval_call(stmt, ctx, parent, out)
+        _eval_call(stmt, ctx, parent, out, label=label)
     elif isinstance(stmt, Assignment):
         # If the rhs is a renderable call (builtin or component), expand
-        # it as a child of the current scope; the name is just a label.
-        # Otherwise the rhs is a value expression — bind it into the
-        # innermost env so later identifiers can resolve it.
+        # it as a child of the current scope and remember the
+        # assignment name as the leaf's label so animate rules can
+        # target it.  Otherwise the rhs is a plain value expression —
+        # bind it into the innermost env.
         if isinstance(stmt.value, Call):
-            _eval_call(stmt.value, ctx, parent, out)
+            _eval_call(stmt.value, ctx, parent, out, label=stmt.name)
         else:
             value = _eval_expr(stmt.value, ctx)
             if not ctx.component_env_stack:
@@ -258,14 +383,28 @@ def _eval_stmt(stmt, ctx: _EvalCtx, parent: np.ndarray, out: List[SceneNode]) ->
         raise EvalError(f"unsupported statement: {type(stmt).__name__}")
 
 
-def _eval_call(call: Call, ctx: _EvalCtx, parent: np.ndarray, out: List[SceneNode]) -> None:
+def _eval_call(
+    call: Call,
+    ctx: _EvalCtx,
+    parent: np.ndarray,
+    out: List[_LeafState],
+    label: Optional[str] = None,
+) -> None:
     args = _eval_args(call.args, ctx)
     if isinstance(call.callee, Identifier):
         name = call.callee.name
         if name in BUILTINS:
-            leaf = BUILTINS[name](args)
-            leaf.transform = np.array(parent @ leaf.transform, dtype="f4")
-            out.append(leaf)
+            verts, indices, normals = BUILTINS[name](args)
+            out.append(
+                _LeafState(
+                    vertices=verts,
+                    indices=indices,
+                    normals=normals,
+                    parent_transform=parent.copy(),
+                    local_args=args,
+                    label=label,
+                )
+            )
             return
         component = _find_component(ctx.current_path, name, ctx.program)
         if component is None:
@@ -299,7 +438,7 @@ def _expand_component(
     ctx: _EvalCtx,
     component_path: Path,
     parent: np.ndarray,
-    out: List[SceneNode],
+    out: List[_LeafState],
 ) -> None:
     if component.name in ctx.component_stack:
         raise EvalError(
@@ -347,10 +486,41 @@ def _eval_expr(expr, ctx: _EvalCtx):
         return _apply_unaryop(expr.op, _eval_expr(expr.operand, ctx))
     if isinstance(expr, RgbCall):
         return _eval_rgb_call(expr, ctx)
+    if isinstance(expr, AnimCall):
+        return _eval_anim_call(expr, ctx)
     if isinstance(expr, Call):
         # Evaluating a call as an argument value is unsupported in v0.1.
         raise EvalError("nested calls as argument values are not supported")
     raise EvalError(f"cannot evaluate expression: {type(expr).__name__}")
+
+
+def _eval_anim_call(node: AnimCall, ctx: _EvalCtx):
+    t_val = _eval_expr(node.t, ctx)
+    if not isinstance(t_val, (int, float)):
+        raise EvalError("anim(): first argument must be a number (typically `t`)")
+    start = _eval_expr(node.start, ctx)
+    end = _eval_expr(node.end, ctx)
+    duration = _eval_expr(node.duration, ctx)
+    if not isinstance(duration, (int, float)):
+        raise EvalError("anim(): duration must be a number")
+    fn = resolve_easing(node.easing)
+    if fn is None:
+        raise EvalError(f"anim(): unknown easing '{node.easing}'")
+    if duration <= 0:
+        return end
+    progress = max(0.0, min(1.0, float(t_val) / float(duration)))
+    eased = fn(progress)
+    return _lerp(start, end, eased)
+
+
+def _lerp(a, b, t: float):
+    if isinstance(a, tuple) and isinstance(b, tuple):
+        if len(a) != len(b):
+            raise EvalError("anim(): tuple endpoints have mismatched lengths")
+        return tuple(_lerp(x, y, t) for x, y in zip(a, b))
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return (1.0 - t) * float(a) + t * float(b)
+    raise EvalError("anim(): endpoints must be numbers or tuples of numbers")
 
 
 def _eval_rgb_call(expr: RgbCall, ctx: _EvalCtx):
