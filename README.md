@@ -209,6 +209,12 @@ circlelib run examples/circles.crl --check
 
 # Render once to a PNG (no window, ideal for CI / docs / share previews).
 circlelib run examples/circles.crl --export-png hero.png --width 1280 --height 720
+
+# Record an animated scene to MP4 (pipes offscreen frames into ffmpeg):
+circlelib record examples/anim/orbit.crl --out orbit.mp4 --fps 30 --width 960 --height 540
+
+# No ffmpeg? Dump a PNG sequence instead:
+circlelib record examples/anim/orbit.crl --out frames/ --png-fallback --fps 24
 ```
 
 ### Window controls

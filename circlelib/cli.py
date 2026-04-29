@@ -1,10 +1,16 @@
 """Command-line entry point for circlelib.
 
-    circlelib run path/to/scene.crl
+Two subcommands:
 
-Loads the program, evaluates it into a list of SceneNodes, and opens a
-window to render the result. `--check` runs only the parser/evaluator,
-which is useful in headless environments and CI.
+  circlelib run path/to/scene.crl
+      Loads the program, compiles it into a frame callable, and either
+      opens a window, exports a single PNG (`--export-png`), or just
+      parses + evaluates (`--check`).
+
+  circlelib record path/to/scene.crl --out clip.mp4
+      Encodes an animated scene to MP4 by piping offscreen frames into
+      ffmpeg. Falls back to a PNG sequence with `--png-fallback` when
+      ffmpeg is missing.
 """
 
 from __future__ import annotations
@@ -42,6 +48,27 @@ def _build_parser() -> argparse.ArgumentParser:
     run.add_argument("--width", type=int, default=960)
     run.add_argument("--height", type=int, default=720)
 
+    record = sub.add_parser(
+        "record", help="render an animated .crl to MP4 (or a PNG sequence)"
+    )
+    record.add_argument("file", type=Path, help="path to a .crl file")
+    record.add_argument(
+        "--out", type=Path, required=True,
+        help="output MP4 path (or directory for --png-fallback)",
+    )
+    record.add_argument(
+        "--duration", type=float, default=None,
+        help="seconds (defaults to the scene's animate { duration })",
+    )
+    record.add_argument("--fps", type=int, default=30)
+    record.add_argument("--width", type=int, default=960)
+    record.add_argument("--height", type=int, default=540)
+    record.add_argument(
+        "--png-fallback", action="store_true",
+        help="write a frame_0000.png sequence instead of an MP4 "
+             "(useful when ffmpeg is unavailable)",
+    )
+
     return parser
 
 
@@ -76,6 +103,47 @@ def main(argv: list[str] | None = None) -> int:
 
         run_window(scene, width=args.width, height=args.height)
         return 0
+
+    if args.command == "record":
+        program = load(args.file)
+        scene = compile_program(program)
+        if not scene.is_animated and args.duration is None:
+            print(
+                "error: scene has no `animate { duration = ... }` block; "
+                "pass --duration to record a still frame range.",
+                file=sys.stderr,
+            )
+            return 2
+        from circlelib.render.offscreen import (
+            FfmpegMissingError,
+            record_animation,
+            record_animation_pngs,
+        )
+        if args.png_fallback:
+            out = record_animation_pngs(
+                scene, args.out,
+                duration=args.duration, fps=args.fps,
+                width=args.width, height=args.height,
+            )
+            print(f"wrote PNG sequence to {out}/")
+            return 0
+        try:
+            out = record_animation(
+                scene, args.out,
+                duration=args.duration, fps=args.fps,
+                width=args.width, height=args.height,
+            )
+        except FfmpegMissingError:
+            print(
+                "error: ffmpeg not found on PATH. Install ffmpeg "
+                "(e.g. `brew install ffmpeg`) or rerun with "
+                "--png-fallback to dump a PNG sequence instead.",
+                file=sys.stderr,
+            )
+            return 3
+        print(f"wrote {out}")
+        return 0
+
     return 1
 
 
