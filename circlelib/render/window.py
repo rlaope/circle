@@ -140,14 +140,18 @@ def run_window(
                 start_time = now
                 renderer.upload(compiled(0.0))
                 file_watcher.retarget(list(program.modules.keys()))
+                hud.clear_error()
                 print(
                     f"reloaded {entry_path} ({len(program.modules)} module(s))",
                     file=sys.stderr,
                 )
             except Exception as e:
                 # Keep the previous good scene running; surface the
-                # error on stderr so the user sees it in the terminal.
-                print(f"reload failed: {e.__class__.__name__}: {e}", file=sys.stderr)
+                # error both on stderr and inside the HUD so the user
+                # sees it without needing the terminal in view.
+                err_msg = f"{e.__class__.__name__}: {e}"
+                hud.set_error(err_msg)
+                print(f"reload failed: {err_msg}", file=sys.stderr)
 
         t = 0.0
         if animated and compiled is not None:

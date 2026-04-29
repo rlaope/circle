@@ -43,7 +43,7 @@ Target: live coders, lecturers demoing in real time.
 
 - [x] File watcher with auto re-evaluation — `circlelib run --watch`
 - [x] Camera state preserved across reloads
-- [ ] Helpful error overlays inside the window
+- [x] Helpful error overlays inside the window — red HUD band on reload failure
 
 ## v0.6 — "Reusable assets"
 
