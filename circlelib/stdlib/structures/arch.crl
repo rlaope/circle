@@ -1,0 +1,13 @@
+// circlelib stdlib — structures/arch
+//
+// A simple gateway: two columns standing on either side of a 6-unit
+// gap, joined by a heavy crossbeam. Drive cars or place doorways
+// between the columns.
+
+import "@stdlib/structures/column" as col
+
+component Arch {
+    Group(position=( 3, 0, 0)) { col.Column(position=(0, 0, 0)) }
+    Group(position=(-3, 0, 0)) { col.Column(position=(0, 0, 0)) }
+    Cube(width=8.0, height=0.7, depth=1.4, position=(0, 5.0, 0), color=#cdb37a)
+}

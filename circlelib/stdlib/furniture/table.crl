@@ -1,0 +1,32 @@
+// circlelib stdlib — furniture/table
+//
+// Table is a square dining table. Desk is a longer rectangular work
+// surface with a single drawer block underneath the right side.
+
+component Table {
+    // Four legs.
+    Group(position=( 1.4, 0.65,  0.9)) { Cube(width=0.18, height=1.3, depth=0.18, color=#6b3f1d) }
+    Group(position=(-1.4, 0.65,  0.9)) { Cube(width=0.18, height=1.3, depth=0.18, color=#6b3f1d) }
+    Group(position=( 1.4, 0.65, -0.9)) { Cube(width=0.18, height=1.3, depth=0.18, color=#6b3f1d) }
+    Group(position=(-1.4, 0.65, -0.9)) { Cube(width=0.18, height=1.3, depth=0.18, color=#6b3f1d) }
+
+    // Top surface.
+    Cube(width=3.2, height=0.18, depth=2.0, position=(0, 1.4, 0), color=#a86a3a)
+}
+
+component Desk {
+    // Four legs.
+    Group(position=( 1.7, 0.65,  0.6)) { Cube(width=0.16, height=1.3, depth=0.16, color=#3f3027) }
+    Group(position=(-1.7, 0.65,  0.6)) { Cube(width=0.16, height=1.3, depth=0.16, color=#3f3027) }
+    Group(position=( 1.7, 0.65, -0.6)) { Cube(width=0.16, height=1.3, depth=0.16, color=#3f3027) }
+    Group(position=(-1.7, 0.65, -0.6)) { Cube(width=0.16, height=1.3, depth=0.16, color=#3f3027) }
+
+    // Top surface.
+    Cube(width=3.8, height=0.14, depth=1.4, position=(0, 1.4, 0), color=#5b4434)
+
+    // Drawer block tucked under the right side.
+    Cube(width=1.0, height=0.7, depth=1.2, position=(1.2, 1.0, 0), color=#3f3027)
+
+    // Drawer pull.
+    Cube(width=0.3, height=0.06, depth=0.06, position=(1.2, 1.05, 0.65), color=#cdb37a)
+}

@@ -49,7 +49,7 @@ Target: live coders, lecturers demoing in real time.
 
 Target: returning users who want to compose with prior work.
 
-- [ ] Standard library `stdlib/` (furniture, vehicles, data-structures, geometry helpers)
+- [x] Standard library `stdlib/` (furniture, vehicles, structures, geometry helpers) — `@stdlib/...` import prefix
 - [ ] `circlelib install <pkg>` from GitHub URLs (no central registry yet)
 
 ## v1.0 — "Stable, packaged, marketed"

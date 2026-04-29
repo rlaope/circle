@@ -1,0 +1,37 @@
+// circlelib stdlib — vehicles/car
+//
+// Car / Truck composites built from `wheels` + simple Cubes. Both
+// have their wheel base flush with `y = 0` so a flat ground plane
+// at y = 0 lines up cleanly.
+
+import "@stdlib/vehicles/wheels" as wheels
+
+component Car {
+    // Lower body.
+    Cube(width=4.4, height=0.9, depth=2.2, position=(0, 1.05, 0), color=#3aa0ff)
+
+    // Greenhouse / cabin.
+    Cube(width=2.4, height=0.8, depth=1.9, position=(0.2, 1.9, 0), color=#1d6fc0)
+
+    // Headlights.
+    Sphere(radius=0.15, position=( 2.2, 1.1,  0.7), color=#fff5b0)
+    Sphere(radius=0.15, position=( 2.2, 1.1, -0.7), color=#fff5b0)
+
+    // Four wheels.
+    wheels.Quad(position=(0, 0, 0))
+}
+
+component Truck {
+    // Cab.
+    Cube(width=2.0, height=1.6, depth=2.2, position=(-1.6, 1.4, 0), color=#c8443a)
+
+    // Cab windshield band.
+    Cube(width=1.5, height=0.6, depth=1.95, position=(-1.6, 2.0, 0), color=#9a2c25)
+
+    // Cargo box.
+    Cube(width=4.0, height=2.0, depth=2.4, position=( 1.4, 1.6, 0), color=#7a5a2a)
+
+    // Wheels — front pair under cab, rear pair under cargo.
+    Group(position=(-1.6, 0, 0)) { wheels.Pair(position=(0, 0, 0)) }
+    Group(position=( 1.4, 0, 0)) { wheels.Pair(position=(0, 0, 0)) }
+}

@@ -1,0 +1,21 @@
+// circlelib stdlib — geometry/axes
+//
+// World-space orientation helper. Three thin cylinders sticking out
+// of the origin, X red, Y green, Z blue. Standard right-handed CG
+// convention. Drop one of these into a scene to see which way is up
+// while you're building.
+
+component Axes {
+    // X — red, lying along +X.
+    Cylinder(radius=0.04, height=2.4, position=(1.2, 0, 0), rotation=(0, 0, 90), color=#ff3333)
+
+    // Y — green, pointing +up.
+    Cylinder(radius=0.04, height=2.4, position=(0, 1.2, 0), color=#33dd55)
+
+    // Z — blue, lying along +Z (rotation around X turns the cylinder
+    // axis from +Y to +Z).
+    Cylinder(radius=0.04, height=2.4, position=(0, 0, 1.2), rotation=(90, 0, 0), color=#3a8aff)
+
+    // Origin marker.
+    Sphere(radius=0.12, position=(0, 0, 0), color=#ffffff)
+}

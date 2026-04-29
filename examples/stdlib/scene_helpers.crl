@@ -1,0 +1,20 @@
+// stdlib demo — orientation helpers. Place an Axes at the origin
+// and a Crosshair at a target position to verify world coordinates.
+//
+// Run:  circlelib run examples/stdlib/scene_helpers.crl
+
+import "@stdlib/geometry/axes"      as ax
+import "@stdlib/geometry/crosshair" as ch
+import "@stdlib/structures/column"  as col
+
+scene {
+    // Origin axes.
+    ax.Axes(position=(0, 0, 0))
+
+    // Crosshair sitting at (5, 2, 3) — useful as a placement target.
+    ch.Crosshair(position=(5, 2, 3))
+
+    // A column off to the side so the helpers have something to
+    // measure against.
+    col.Column(position=(-5, 0, 0))
+}

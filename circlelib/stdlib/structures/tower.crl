@@ -1,0 +1,12 @@
+// circlelib stdlib — structures/tower
+//
+// A 5-stack stepped pyramid. Each block sits on top of the previous
+// one with a slight inset, like a layered ziggurat.
+
+component Tower {
+    Cube(width=4.0, height=0.8, depth=4.0, position=(0, 0.4, 0), color=#a3b1c2)
+    Cube(width=3.2, height=0.8, depth=3.2, position=(0, 1.2, 0), color=#8d9bad)
+    Cube(width=2.4, height=0.8, depth=2.4, position=(0, 2.0, 0), color=#778497)
+    Cube(width=1.6, height=0.8, depth=1.6, position=(0, 2.8, 0), color=#616d80)
+    Cube(width=0.9, height=0.9, depth=0.9, position=(0, 3.65, 0), color=#cdb37a)
+}

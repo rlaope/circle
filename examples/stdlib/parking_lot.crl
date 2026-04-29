@@ -1,0 +1,24 @@
+// stdlib demo — a row of cars and one truck rolling under an
+// arch entrance. All assets are imported from @stdlib.
+//
+// Run:  circlelib run examples/stdlib/parking_lot.crl
+
+import "@stdlib/vehicles/car"     as v
+import "@stdlib/structures/arch"  as st
+import "@stdlib/structures/tower" as tw
+
+scene {
+    // Entrance arch on the left.
+    st.Arch(position=(-12, 0, 0))
+
+    // Three cars staggered along +X past the arch, slightly turned.
+    v.Car(position=(-4, 0,  3), rotation=(0, -10, 0))
+    v.Car(position=( 0, 0,  0))
+    v.Car(position=( 4, 0, -3), rotation=(0,  10, 0))
+
+    // One truck on the far right.
+    v.Truck(position=( 9, 0, 4))
+
+    // A landmark tower in the distance for orientation.
+    tw.Tower(position=(0, 0, -14))
+}

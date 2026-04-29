@@ -4,8 +4,10 @@
 - the entry module's AST
 - a mapping {alias -> Module} for everything imported (transitively)
 
-Imports are resolved relative to the importing file's directory.
-A `.crl` extension is auto-appended if missing. Circular imports raise.
+Imports starting with `@stdlib/` resolve into the catalog shipped at
+`circlelib/stdlib/`. Everything else is resolved relative to the
+importing file's directory. A `.crl` extension is auto-appended if
+missing. Circular imports raise.
 """
 
 from __future__ import annotations
@@ -16,6 +18,10 @@ from typing import Dict
 
 from circlelib.ast.nodes import Module
 from circlelib.parser import parse_file
+
+
+STDLIB_PREFIX = "@stdlib/"
+STDLIB_ROOT = Path(__file__).resolve().parent.parent / "stdlib"
 
 
 @dataclass
@@ -35,7 +41,11 @@ class CircularImportError(RuntimeError):
 
 
 def _resolve_path(base: Path, raw: str) -> Path:
-    target = (base.parent / raw).resolve()
+    if raw.startswith(STDLIB_PREFIX):
+        sub = raw[len(STDLIB_PREFIX):]
+        target = (STDLIB_ROOT / sub).resolve()
+    else:
+        target = (base.parent / raw).resolve()
     if target.suffix == "":
         target = target.with_suffix(".crl")
     return target

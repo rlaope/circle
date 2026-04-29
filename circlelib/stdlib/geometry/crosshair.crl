@@ -1,0 +1,11 @@
+// circlelib stdlib — geometry/crosshair
+//
+// Three perpendicular thin rods crossing at the origin, all the same
+// neutral colour. Useful as a placement gizmo or to verify a target
+// position visually inside a busy scene.
+
+component Crosshair {
+    Cylinder(radius=0.025, height=2.0, position=(0, 0, 0), rotation=(0, 0, 90), color=#cccccc)
+    Cylinder(radius=0.025, height=2.0, position=(0, 0, 0), color=#cccccc)
+    Cylinder(radius=0.025, height=2.0, position=(0, 0, 0), rotation=(90, 0, 0), color=#cccccc)
+}

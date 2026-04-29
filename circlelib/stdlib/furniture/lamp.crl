@@ -1,0 +1,17 @@
+// circlelib stdlib — furniture/lamp
+//
+// A floor lamp: weighted base, slim pole, conical shade.
+
+component Lamp {
+    // Heavy base.
+    Cylinder(radius=0.35, height=0.12, position=(0, 0.06, 0), color=#222222)
+
+    // Pole.
+    Cylinder(radius=0.04, height=2.2, position=(0, 1.16, 0), color=#444444)
+
+    // Cone shade, apex pointing up.
+    Cone(radius=0.5, height=0.55, position=(0, 2.3, 0), color=#f7e7a6)
+
+    // Implied bulb.
+    Sphere(radius=0.18, position=(0, 2.35, 0), color=#fff5cf)
+}

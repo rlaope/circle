@@ -98,6 +98,33 @@ scene {
 `palette.Red` as an argument value — values cross modules through
 component arguments, not through identifiers.
 
+### 4.1 Standard library imports — `@stdlib/...`
+
+Paths beginning with `@stdlib/` resolve into the catalog shipped inside
+the installed `circlelib` package. They do not consult the importing
+file's directory:
+
+```crl
+import "@stdlib/furniture/chair" as ch
+import "@stdlib/vehicles/car"    as v
+import "@stdlib/geometry/axes"   as ax
+
+scene {
+    ax.Axes(position=(0, 0, 0))
+    ch.Chair(position=(0, 0, 2))
+    v.Car(position=(6, 0, 0))
+}
+```
+
+The complete catalog and conventions are documented in
+[`circlelib/stdlib/README.md`](../circlelib/stdlib/README.md).
+
+`@stdlib/` and ordinary relative imports coexist: a user file can
+import both freely. Inside the catalog, stdlib modules also use
+`@stdlib/` paths to refer to their siblings (for example `Car` pulls
+in `@stdlib/vehicles/wheels`), so the catalog is self-contained
+regardless of where it's installed.
+
 ---
 
 ## 5. Bindings

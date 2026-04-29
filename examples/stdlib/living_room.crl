@@ -1,0 +1,23 @@
+// stdlib demo — a small dining setup. One table, four chairs around
+// it, a lamp on the corner. Everything imported from @stdlib.
+//
+// Run:  circlelib run examples/stdlib/living_room.crl
+
+import "@stdlib/furniture/chair" as ch
+import "@stdlib/furniture/table" as tb
+import "@stdlib/furniture/lamp"  as lp
+
+scene {
+    // Centerpiece table.
+    tb.Table(position=(0, 0, 0))
+
+    // Four chairs facing the table. Backrest sits on the side
+    // furthest from the table.
+    ch.Chair(position=(0, 0,  2.4), rotation=(0, 180, 0))
+    ch.Chair(position=(0, 0, -2.4))
+    ch.Chair(position=( 2.4, 0, 0), rotation=(0, -90, 0))
+    ch.Chair(position=(-2.4, 0, 0), rotation=(0,  90, 0))
+
+    // Reading lamp off to one corner.
+    lp.Lamp(position=(-4.5, 0, -2.5))
+}

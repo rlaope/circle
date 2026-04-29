@@ -1,0 +1,10 @@
+// circlelib stdlib — structures/column
+//
+// A classic capped column: square plinth, cylindrical shaft, square
+// abacus on top.
+
+component Column {
+    Cube(width=1.4, height=0.3, depth=1.4, position=(0, 0.15, 0), color=#d8d3c8)
+    Cylinder(radius=0.4, height=4.0, position=(0, 2.3, 0), color=#ecdfca)
+    Cube(width=1.4, height=0.3, depth=1.4, position=(0, 4.45, 0), color=#d8d3c8)
+}
