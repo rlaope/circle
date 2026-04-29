@@ -66,6 +66,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--width", type=int, default=960)
     run.add_argument("--height", type=int, default=720)
+    run.add_argument(
+        "--watch", action="store_true",
+        help="live-reload on file save (parse + compile + swap scene; "
+             "preserves orbit-camera state)",
+    )
 
     record = sub.add_parser(
         "record", help="render an animated .crl to MP4 (or a PNG sequence)"
@@ -160,7 +165,13 @@ def main(argv: list[str] | None = None) -> int:
         # Imported lazily so `--check` works without a display / GPU.
         from circlelib.render.window import run_window
 
-        run_window(scene, width=args.width, height=args.height)
+        run_window(
+            scene,
+            width=args.width,
+            height=args.height,
+            entry_path=args.file,
+            watch=args.watch,
+        )
         return 0
 
     if args.command == "record":

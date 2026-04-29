@@ -4,13 +4,20 @@
 runs an interactive orbit-camera loop until the window is closed.
 For animated programs the loop calls the compiled-scene callable each
 frame with the current time (looped over the scene's duration).
+
+When ``watch=True`` and an ``entry_path`` is supplied, the loop also
+polls every loaded `.crl` for mtime changes and live-reloads the
+scene when any file is saved. The orbit camera state is preserved
+across reloads.
 """
 
 from __future__ import annotations
 
 import math
+import sys
 from collections import deque
-from typing import List, Union
+from pathlib import Path
+from typing import List, Optional, Union
 
 import glfw
 import moderngl
@@ -18,7 +25,9 @@ import moderngl
 from circlelib.render.camera import OrbitCamera
 from circlelib.render.hud import Hud
 from circlelib.render.renderer import Renderer
-from circlelib.runtime.evaluator import CompiledScene, SceneNode
+from circlelib.runtime.evaluator import CompiledScene, SceneNode, compile_program
+from circlelib.runtime.resolver import load
+from circlelib.runtime.watcher import FileWatcher
 
 
 def _init_glfw(title: str, width: int, height: int):
@@ -44,12 +53,19 @@ def run_window(
     title: str = "circlelib",
     width: int = 960,
     height: int = 720,
+    entry_path: Optional[Path] = None,
+    watch: bool = False,
 ) -> None:
     """Open a window and render `scene`.
 
     Accepts either a `CompiledScene` (with optional animation) or a
     plain list of `SceneNode` for backward compatibility. Animated
     scenes loop over their declared duration.
+
+    With ``watch=True`` and ``entry_path`` set, the loop polls every
+    loaded `.crl` for mtime changes and live-reloads on save. Orbit
+    camera state is preserved across reloads. Reload errors print one
+    line to stderr and keep the previous good scene rendering.
     """
     window = _init_glfw(title, width, height)
     ctx = moderngl.create_context()
@@ -65,6 +81,12 @@ def run_window(
         animated = False
         nodes = scene
     renderer.upload(nodes)
+
+    file_watcher: Optional[FileWatcher] = None
+    if watch and entry_path is not None and compiled is not None:
+        tracked = list(compiled.program.modules.keys())
+        file_watcher = FileWatcher(tracked)
+        print(f"watching {len(tracked)} module(s) for changes...", file=sys.stderr)
 
     camera = OrbitCamera()
     start_time = glfw.get_time()
@@ -108,6 +130,24 @@ def run_window(
         last_frame_time = now
         if dt > 0:
             fps_window.append(1.0 / dt)
+
+        if file_watcher is not None and entry_path is not None and file_watcher.changed():
+            try:
+                program = load(entry_path)
+                new_compiled = compile_program(program)
+                compiled = new_compiled
+                animated = compiled.is_animated
+                start_time = now
+                renderer.upload(compiled(0.0))
+                file_watcher.retarget(list(program.modules.keys()))
+                print(
+                    f"reloaded {entry_path} ({len(program.modules)} module(s))",
+                    file=sys.stderr,
+                )
+            except Exception as e:
+                # Keep the previous good scene running; surface the
+                # error on stderr so the user sees it in the terminal.
+                print(f"reload failed: {e.__class__.__name__}: {e}", file=sys.stderr)
 
         t = 0.0
         if animated and compiled is not None:

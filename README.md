@@ -252,6 +252,10 @@ circlelib run examples/circles.crl --check
 # Render once to a PNG (no window, ideal for CI / docs / share previews).
 circlelib run examples/circles.crl --export-png hero.png --width 1280 --height 720
 
+# Live-reload mode — every save re-parses + recompiles + swaps the scene
+# without closing the window or resetting the orbit camera.
+circlelib run examples/circles.crl --watch
+
 # Record an animated scene to MP4 (pipes offscreen frames into ffmpeg):
 circlelib record examples/anim/orbit.crl --out orbit.mp4 --fps 30 --width 960 --height 540
 

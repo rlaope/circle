@@ -41,8 +41,8 @@ Target: creative coders, educators, and content authors.
 
 Target: live coders, lecturers demoing in real time.
 
-- [ ] File watcher with auto re-evaluation
-- [ ] Camera state preserved across reloads
+- [x] File watcher with auto re-evaluation — `circlelib run --watch`
+- [x] Camera state preserved across reloads
 - [ ] Helpful error overlays inside the window
 
 ## v0.6 — "Reusable assets"
