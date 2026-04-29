@@ -47,7 +47,7 @@ _FONT_CANDIDATES = [
 ]
 
 
-def _load_mono_font(size: int = 20):
+def _load_mono_font(size: int = 28):
     for path in _FONT_CANDIDATES:
         if Path(path).exists():
             try:
@@ -58,16 +58,16 @@ def _load_mono_font(size: int = 20):
 
 
 class Hud:
-    WIDTH_PX = 420
-    HEIGHT_PX = 220
-    MARGIN_PX = 16
-    LINE_HEIGHT_PX = 26
-    PADDING_PX = 14
+    WIDTH_PX = 580
+    HEIGHT_PX = 310
+    MARGIN_PX = 20
+    LINE_HEIGHT_PX = 36
+    PADDING_PX = 18
 
     def __init__(self, ctx: moderngl.Context):
         self.ctx = ctx
         self._program = ctx.program(vertex_shader=_HUD_VS, fragment_shader=_HUD_FS)
-        self._font = _load_mono_font(20)
+        self._font = _load_mono_font(28)
 
         self._texture = ctx.texture((self.WIDTH_PX, self.HEIGHT_PX), 4)
         self._texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
