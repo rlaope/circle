@@ -1,0 +1,7 @@
+// Flat ground Plane plus a couple of objects on top of it.
+
+scene {
+    Plane(width=20, depth=20, position=(0, 0, 0), color=#1a1a1a)
+    Cube(width=2, height=2, depth=2, position=(0, 1, 0), color=#3aa0ff)
+    Sphere(radius=1, position=(4, 1, 2), color=#ff5577)
+}

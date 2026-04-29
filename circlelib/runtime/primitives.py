@@ -51,6 +51,28 @@ def cube(width: float, height: float, depth: float) -> Mesh:
     )
 
 
+def plane(width: float, depth: float) -> Mesh:
+    """Flat quad in the XZ plane (y=0), normal +Y.
+
+    Two triangles, one per-vertex normal. Sized by `width` along X and
+    `depth` along Z, centered at the origin.
+    """
+    hx, hz = width / 2.0, depth / 2.0
+    verts = [
+        (-hx, 0.0, -hz),
+        ( hx, 0.0, -hz),
+        ( hx, 0.0,  hz),
+        (-hx, 0.0,  hz),
+    ]
+    norms = [(0.0, 1.0, 0.0)] * 4
+    indices = [0, 2, 1, 0, 3, 2]
+    return (
+        np.array(verts, dtype="f4"),
+        np.array(indices, dtype="u4"),
+        np.array(norms, dtype="f4"),
+    )
+
+
 def sphere(radius: float, segments: int = 24, rings: int = 16) -> Mesh:
     verts: list[tuple[float, float, float]] = []
     norms: list[tuple[float, float, float]] = []

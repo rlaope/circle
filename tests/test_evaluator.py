@@ -214,3 +214,29 @@ def test_division_by_zero_raises(tmp_path: Path):
     _write(entry, "scene { Cube(width=1 / 0, height=1, depth=1) }")
     with pytest.raises(EvalError):
         evaluate(load(entry))
+
+
+def test_plane_renders_with_translation(tmp_path: Path):
+    entry = tmp_path / "main.crl"
+    _write(entry, """
+        scene {
+            Plane(width=10, depth=6, position=(0, 0, 0), color=#222222)
+            Plane(width=4, depth=4, position=(5, 1, -2))
+        }
+    """)
+    nodes = evaluate(load(entry))
+    assert len(nodes) == 2
+    # Plane mesh is 4 vertices in the XZ plane (y=0).
+    assert nodes[0].vertices.shape == (4, 3)
+    assert np.allclose(nodes[0].vertices[:, 1], 0.0)
+    # Width spans x in [-5, 5], depth spans z in [-3, 3].
+    xs = sorted(set(nodes[0].vertices[:, 0].tolist()))
+    zs = sorted(set(nodes[0].vertices[:, 2].tolist()))
+    assert xs == [-5.0, 5.0]
+    assert zs == [-3.0, 3.0]
+    # Normals point +Y.
+    assert np.allclose(nodes[0].normals, np.array([[0.0, 1.0, 0.0]] * 4))
+    # Translation applies to the second plane.
+    assert tuple(nodes[1].transform[3, :3]) == (5.0, 1.0, -2.0)
+    # Default color falls back when omitted.
+    assert nodes[1].color == pytest.approx((0.85, 0.85, 0.9))

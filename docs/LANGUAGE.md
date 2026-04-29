@@ -258,6 +258,7 @@ Group(position=(10, 0, 0)) {
 | `Sphere`   | `radius`                   | `position`, `color`                                              |
 | `Cylinder` | `radius`, `height`         | `position`, `rotation`, `color`                                  |
 | `Circle`   | `radius`                   | `tube` (default `radius * 0.1`), `position`, `rotation`, `color` |
+| `Plane`    | `width`, `depth`           | `position`, `rotation`, `color`                                  |
 | `Group`    | (none — uses block body)   | `position`, `rotation`                                           |
 
 Standard argument semantics:
@@ -269,6 +270,9 @@ Standard argument semantics:
 
 `Circle` is a true 3D torus; `tube` is the radius of the tube around
 the ring.
+
+`Plane` is a flat XZ quad at `y=0` with normal `+Y`, sized `width`
+along X and `depth` along Z. Use `rotation` to stand it up as a wall.
 
 ---
 

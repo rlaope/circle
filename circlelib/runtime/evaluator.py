@@ -90,11 +90,20 @@ def _builtin_circle(args: dict) -> "SceneNode":
     return _make_leaf(v, i, n, args)
 
 
+def _builtin_plane(args: dict) -> "SceneNode":
+    v, i, n = primitives.plane(
+        _need_number(args, "width", "Plane"),
+        _need_number(args, "depth", "Plane"),
+    )
+    return _make_leaf(v, i, n, args)
+
+
 BUILTINS = {
     "Cube": _builtin_cube,
     "Sphere": _builtin_sphere,
     "Cylinder": _builtin_cylinder,
     "Circle": _builtin_circle,
+    "Plane": _builtin_plane,
 }
 
 
