@@ -88,12 +88,23 @@ produce thin hoops.
 
 ### Argument value types
 
-| Form           | Example       | Becomes               |
-|----------------|---------------|-----------------------|
-| Number         | `12.5`        | float                 |
-| Tuple          | `(1, 2, 3)`   | 3-tuple of floats     |
-| Hex color      | `#ff5577`     | `(r, g, b)` in `[0,1]`|
-| String literal | `"label"`     | str                   |
+| Form              | Example                       | Becomes               |
+|-------------------|-------------------------------|-----------------------|
+| Number            | `12.5`                        | float                 |
+| Tuple             | `(1, 2, 3)`                   | 3-tuple of floats     |
+| Hex color         | `#ff5577`                     | `(r, g, b)` in `[0,1]`|
+| String literal    | `"label"`                     | str                   |
+| Identifier        | `size`                        | bound value           |
+| Arithmetic        | `size * 2`, `(0, 0, 0) + dir` | float / tuple result  |
+
+Arithmetic supports `+ - * / %`, parentheses, and unary minus. Tuples
+combine component-wise: `(1, 2, 3) + (10, 0, 0)` is `(11, 2, 3)`.
+Bindings live at module top level or inside a `component { ... }` body:
+
+```crl
+size = 5
+scene { Cube(width=size, height=size, depth=size) }
+```
 
 ---
 

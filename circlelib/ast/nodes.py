@@ -18,6 +18,8 @@ Expr = Union[
     "Identifier",
     "MemberAccess",
     "Call",
+    "BinaryOp",
+    "UnaryOp",
 ]
 
 
@@ -65,6 +67,19 @@ class Call:
     args: Tuple[Argument, ...]
 
 
+@dataclass(frozen=True)
+class BinaryOp:
+    op: str  # one of "+", "-", "*", "/", "%"
+    left: Expr
+    right: Expr
+
+
+@dataclass(frozen=True)
+class UnaryOp:
+    op: str  # currently only "-"
+    operand: Expr
+
+
 @dataclass
 class Assignment:
     name: str
@@ -101,4 +116,5 @@ class Import:
 class Module:
     imports: List[Import] = field(default_factory=list)
     components: List[Component] = field(default_factory=list)
+    bindings: List[Assignment] = field(default_factory=list)
     scene: Optional[Scene] = None

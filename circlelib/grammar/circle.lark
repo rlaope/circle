@@ -1,17 +1,21 @@
 // circlelib DSL grammar.
 //
-// A program is a sequence of top-level items: imports, component
-// definitions, and at most one scene block. Component bodies and scene
-// blocks contain statements that are either named assignments or bare
-// calls. Group blocks nest the same kind of statements.
+// A program is a sequence of top-level items: imports, top-level
+// bindings, component definitions, and at most one scene block.
+// Component bodies and scene blocks contain statements that are either
+// named assignments or bare calls. Group blocks nest the same kind of
+// statements.
 
 start: top_item*
 
 top_item: import_stmt
         | component_def
         | scene_def
+        | top_binding
 
 import_stmt: "import" STRING "as" NAME
+
+top_binding: NAME "=" expr
 
 component_def: "component" NAME "{" stmt* "}"
 
@@ -34,12 +38,27 @@ qualified_name: NAME ("." NAME)*
 arg_list: arg ("," arg)* ","?
 arg: NAME "=" expr
 
-expr: tuple_lit
-    | NUMBER       -> number_lit
-    | STRING       -> string_lit
-    | HEXCOLOR     -> color_lit
-    | qualified_name -> ident_expr
-    | call         -> call_expr
+?expr: add_expr
+
+?add_expr: mul_expr
+         | add_expr "+" mul_expr   -> add
+         | add_expr "-" mul_expr   -> sub
+
+?mul_expr: unary_expr
+         | mul_expr "*" unary_expr -> mul
+         | mul_expr "/" unary_expr -> div
+         | mul_expr "%" unary_expr -> mod
+
+?unary_expr: atom
+           | "-" unary_expr        -> neg
+
+?atom: tuple_lit
+     | NUMBER          -> number_lit
+     | STRING          -> string_lit
+     | HEXCOLOR        -> color_lit
+     | qualified_name  -> ident_expr
+     | call            -> call_expr
+     | "(" expr ")"
 
 tuple_lit: "(" expr ("," expr)+ ","? ")"
 

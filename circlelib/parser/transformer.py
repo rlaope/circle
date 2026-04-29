@@ -13,6 +13,7 @@ from lark import Lark, Transformer, v_args
 from circlelib.ast.nodes import (
     Argument,
     Assignment,
+    BinaryOp,
     Call,
     ColorLit,
     Component,
@@ -25,6 +26,7 @@ from circlelib.ast.nodes import (
     Scene,
     StringLit,
     TupleLit,
+    UnaryOp,
 )
 
 
@@ -72,10 +74,25 @@ class _ToAst(Transformer):
     def tuple_lit(self, *items):
         return TupleLit(tuple(items))
 
-    def expr(self, child):
-        # Unwrap the single-child `expr` wrapper for unaliased branches
-        # (currently just `tuple_lit`).
-        return child
+    # Arithmetic -----------------------------------------------------
+
+    def add(self, left, right):
+        return BinaryOp(op="+", left=left, right=right)
+
+    def sub(self, left, right):
+        return BinaryOp(op="-", left=left, right=right)
+
+    def mul(self, left, right):
+        return BinaryOp(op="*", left=left, right=right)
+
+    def div(self, left, right):
+        return BinaryOp(op="/", left=left, right=right)
+
+    def mod(self, left, right):
+        return BinaryOp(op="%", left=left, right=right)
+
+    def neg(self, operand):
+        return UnaryOp(op="-", operand=operand)
 
     # Names ----------------------------------------------------------
 
@@ -135,6 +152,9 @@ class _ToAst(Transformer):
         path = str(path_tok)[1:-1]
         return Import(path=path, alias=str(alias_tok))
 
+    def top_binding(self, name, value):
+        return Assignment(name=str(name), value=value)
+
     def component_def(self, name, *body):
         return Component(name=str(name), body=list(body))
 
@@ -155,6 +175,8 @@ class _ToAst(Transformer):
                 module.components.append(it)
             elif isinstance(it, Scene):
                 scenes.append(it)
+            elif isinstance(it, Assignment):
+                module.bindings.append(it)
         module.scene = scenes[0] if scenes else None
         module.__circlelib_scene_count__ = len(scenes)
         return module

@@ -3,6 +3,7 @@
 from circlelib.ast.nodes import (
     Argument,
     Assignment,
+    BinaryOp,
     Call,
     ColorLit,
     Component,
@@ -14,6 +15,7 @@ from circlelib.ast.nodes import (
     Scene,
     StringLit,
     TupleLit,
+    UnaryOp,
 )
 from circlelib.parser import parse_source
 
@@ -103,3 +105,54 @@ def test_only_one_scene_allowed():
         assert "one scene block" in str(exc)
         return
     raise AssertionError("expected SyntaxError")
+
+
+def test_top_level_binding_collected_on_module():
+    mod = parse_source("size = 5\nscene { }")
+    assert len(mod.bindings) == 1
+    assert mod.bindings[0].name == "size"
+    assert mod.bindings[0].value == NumberLit(5.0)
+
+
+def test_arithmetic_in_argument_position():
+    mod = parse_source("scene { Cube(width=2 + 3 * 4, height=1, depth=1) }")
+    width = mod.scene.body[0].args[0].value
+    # 2 + 3 * 4 must parse as 2 + (3 * 4) by precedence.
+    assert isinstance(width, BinaryOp)
+    assert width.op == "+"
+    assert width.left == NumberLit(2.0)
+    assert isinstance(width.right, BinaryOp)
+    assert width.right.op == "*"
+    assert width.right.left == NumberLit(3.0)
+    assert width.right.right == NumberLit(4.0)
+
+
+def test_unary_minus_and_parens():
+    mod = parse_source("scene { Cube(width=-(1 + 2), height=1, depth=1) }")
+    width = mod.scene.body[0].args[0].value
+    assert isinstance(width, UnaryOp)
+    assert width.op == "-"
+    assert isinstance(width.operand, BinaryOp)
+    assert width.operand.op == "+"
+
+
+def test_identifier_as_argument_value():
+    src = """
+        size = 5
+        scene { Cube(width=size, height=size, depth=size) }
+    """
+    mod = parse_source(src)
+    width = mod.scene.body[0].args[0].value
+    assert isinstance(width, Identifier)
+    assert width.name == "size"
+
+
+def test_tuple_arithmetic_parses():
+    mod = parse_source(
+        "scene { Sphere(radius=1, position=(0, 0, 0) + (1, 2, 3)) }"
+    )
+    pos = mod.scene.body[0].args[1].value
+    assert isinstance(pos, BinaryOp)
+    assert pos.op == "+"
+    assert isinstance(pos.left, TupleLit)
+    assert isinstance(pos.right, TupleLit)

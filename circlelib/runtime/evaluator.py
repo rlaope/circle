@@ -21,6 +21,7 @@ from pyrr import Matrix44, Quaternion, Vector3
 from circlelib.ast.nodes import (
     Argument,
     Assignment,
+    BinaryOp,
     Call,
     ColorLit,
     Component,
@@ -32,6 +33,7 @@ from circlelib.ast.nodes import (
     Scene,
     StringLit,
     TupleLit,
+    UnaryOp,
 )
 from circlelib.runtime import primitives
 from circlelib.runtime.resolver import LoadedProgram
@@ -152,32 +154,66 @@ class _EvalCtx:
     program: LoadedProgram
     current_path: Path
     component_stack: List[str] = field(default_factory=list)
+    component_env_stack: List[Dict[str, object]] = field(default_factory=list)
+    module_envs: Dict[Path, Dict[str, object]] = field(default_factory=dict)
+
+    def lookup(self, name: str):
+        # Innermost component scope first, then the current module env.
+        for scope in reversed(self.component_env_stack):
+            if name in scope:
+                return scope[name]
+        module_env = self.module_envs.get(self.current_path, {})
+        if name in module_env:
+            return module_env[name]
+        raise EvalError(f"undefined name: {name}")
 
 
 def evaluate(program: LoadedProgram) -> List[SceneNode]:
     if program.entry.scene is None:
         raise EvalError("entry module has no scene block")
     ctx = _EvalCtx(program=program, current_path=program.entry_path)
+    _eval_module_bindings(ctx)
+    ctx.current_path = program.entry_path
     nodes: list[SceneNode] = []
-    for stmt in program.entry.scene.body:
-        _eval_stmt(stmt, ctx, _identity(), nodes)
+    ctx.component_env_stack.append({})
+    try:
+        for stmt in program.entry.scene.body:
+            _eval_stmt(stmt, ctx, _identity(), nodes)
+    finally:
+        ctx.component_env_stack.pop()
     return nodes
+
+
+def _eval_module_bindings(ctx: _EvalCtx) -> None:
+    # Each module gets its own top-level env. Bindings can reference
+    # earlier bindings in the same module; cross-module references go
+    # through `import ... as` aliases (not via top-level identifiers).
+    for path, module in ctx.program.modules.items():
+        env: Dict[str, object] = {}
+        ctx.module_envs[path] = env
+        ctx.current_path = path
+        for binding in module.bindings:
+            env[binding.name] = _eval_expr(binding.value, ctx)
 
 
 def _eval_stmt(stmt, ctx: _EvalCtx, parent: np.ndarray, out: List[SceneNode]) -> None:
     if isinstance(stmt, Call):
         _eval_call(stmt, ctx, parent, out)
     elif isinstance(stmt, Assignment):
-        # In a scene/component body, an assignment is just a named call.
-        # We treat the rhs as if the name were the binding label and
-        # render the value if it is a call. (Names are not yet
-        # referenceable; this is a future feature.)
+        # If the rhs is a renderable call (builtin or component), expand
+        # it as a child of the current scope; the name is just a label.
+        # Otherwise the rhs is a value expression — bind it into the
+        # innermost env so later identifiers can resolve it.
         if isinstance(stmt.value, Call):
             _eval_call(stmt.value, ctx, parent, out)
         else:
-            raise EvalError(
-                f"assignment '{stmt.name}' must bind a component or primitive call"
-            )
+            value = _eval_expr(stmt.value, ctx)
+            if not ctx.component_env_stack:
+                raise EvalError(
+                    f"binding '{stmt.name}' must live at module top level "
+                    f"or inside a component body"
+                )
+            ctx.component_env_stack[-1][stmt.name] = value
     elif isinstance(stmt, GroupBlock):
         local = _local_transform(_eval_args(stmt.args, ctx))
         combined = np.array(parent @ local, dtype="f4")
@@ -240,10 +276,12 @@ def _expand_component(
     ctx.component_stack.append(component.name)
     saved_path = ctx.current_path
     ctx.current_path = component_path
+    ctx.component_env_stack.append({})
     try:
         for stmt in component.body:
             _eval_stmt(stmt, ctx, combined, out)
     finally:
+        ctx.component_env_stack.pop()
         ctx.component_stack.pop()
         ctx.current_path = saved_path
 
@@ -264,13 +302,56 @@ def _eval_expr(expr, ctx: _EvalCtx):
         return expr.rgb
     if isinstance(expr, TupleLit):
         return tuple(_eval_expr(it, ctx) for it in expr.items)
-    if isinstance(expr, (Identifier, MemberAccess)):
-        # Bare identifier in argument position is currently unsupported.
-        raise EvalError("identifiers as argument values are not yet supported")
+    if isinstance(expr, Identifier):
+        return ctx.lookup(expr.name)
+    if isinstance(expr, MemberAccess):
+        raise EvalError("module.alias access is not allowed in expression positions")
+    if isinstance(expr, BinaryOp):
+        return _apply_binop(expr.op, _eval_expr(expr.left, ctx), _eval_expr(expr.right, ctx))
+    if isinstance(expr, UnaryOp):
+        return _apply_unaryop(expr.op, _eval_expr(expr.operand, ctx))
     if isinstance(expr, Call):
         # Evaluating a call as an argument value is unsupported in v0.1.
         raise EvalError("nested calls as argument values are not supported")
     raise EvalError(f"cannot evaluate expression: {type(expr).__name__}")
+
+
+def _apply_binop(op: str, left, right):
+    # Tuple component-wise arithmetic when both sides are tuples of equal length.
+    if isinstance(left, tuple) and isinstance(right, tuple):
+        if len(left) != len(right):
+            raise EvalError(
+                f"tuple {op} between mismatched lengths {len(left)} and {len(right)}"
+            )
+        return tuple(_apply_binop(op, a, b) for a, b in zip(left, right))
+    if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+        if op == "+":
+            return left + right
+        if op == "-":
+            return left - right
+        if op == "*":
+            return left * right
+        if op == "/":
+            if right == 0:
+                raise EvalError("division by zero")
+            return left / right
+        if op == "%":
+            if right == 0:
+                raise EvalError("modulo by zero")
+            return left % right
+    raise EvalError(
+        f"unsupported operands for '{op}': {type(left).__name__} and {type(right).__name__}"
+    )
+
+
+def _apply_unaryop(op: str, value):
+    if op == "-":
+        if isinstance(value, (int, float)):
+            return -value
+        if isinstance(value, tuple):
+            return tuple(_apply_unaryop("-", v) for v in value)
+        raise EvalError(f"unary - not supported on {type(value).__name__}")
+    raise EvalError(f"unknown unary operator: {op}")
 
 
 def _find_component(path: Path, name: str, program: LoadedProgram) -> Optional[Component]:

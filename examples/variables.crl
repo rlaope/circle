@@ -1,0 +1,24 @@
+// variables.crl — top-level bindings + arithmetic in argument values.
+//
+// Run:  circlelib run examples/variables.crl
+
+size = 5
+gap  = size + 1
+
+component Stack {
+    step = 1.5
+    Cube(width=size, height=size, depth=size,
+         position=(0, step * 0, 0), color=#3aa0ff)
+    Cube(width=size, height=size, depth=size,
+         position=(0, step * 1 + size, 0), color=#4ab0ff)
+    Cube(width=size, height=size, depth=size,
+         position=(0, step * 2 + size * 2, 0), color=#5ac0ff)
+}
+
+scene {
+    Stack(position=(-gap * 2, 0, 0))
+    Sphere(radius=size / 2,
+           position=(0, 0, 0) + (0, size, 0),
+           color=#ff5577)
+    Stack(position=(gap * 2, 0, 0))
+}
