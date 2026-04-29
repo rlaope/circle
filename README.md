@@ -240,6 +240,11 @@ pip install -e ".[dev]"
 ## Run
 
 ```sh
+# Scaffold a new .crl from a template (default | anim | stdlib).
+circlelib new my-scene                 # writes ./my-scene.crl (default template)
+circlelib new spin --template anim     # animate{} starter
+circlelib new room --template stdlib   # imports @stdlib/furniture/chair
+
 # Open a window with the hero scene:
 circlelib run examples/circles.crl
 
@@ -289,10 +294,16 @@ bash scripts/verify.sh  # unit tests + headless smoke run of every example
 The suite covers grammar, AST equality, scope rules, module resolution
 (including circular-import detection), and transform composition.
 
-## Language reference
+## Language reference, stability, and changelog
 
-A full spec of the `.crl` syntax — lexical tokens, grammar, scope
-rules, errors — lives in [docs/LANGUAGE.md](docs/LANGUAGE.md).
+- [docs/LANGUAGE.md](docs/LANGUAGE.md) — full `.crl` syntax spec
+  (lexical tokens, grammar, scope rules, errors, `@stdlib/` and
+  `@<owner>/<repo>/` import prefixes).
+- [docs/STABILITY.md](docs/STABILITY.md) — backwards-compatibility
+  contract that takes effect at 1.0.0. Pre-1.0 the grammar and CLI may
+  still change; this document defines what 1.0 will commit to keeping
+  stable.
+- [CHANGELOG.md](CHANGELOG.md) — chronological per-version notes.
 
 ## Galleries
 

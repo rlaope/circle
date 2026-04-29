@@ -10,6 +10,25 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "rlaope" }]
+keywords = ["3d", "dsl", "renderer", "opengl", "moderngl", "scene-description"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics :: 3D Rendering",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Compilers",
+]
 dependencies = [
     "lark>=1.1.9",
     "moderngl>=5.10",
@@ -21,6 +40,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+
+[project.urls]
+Homepage = "https://github.com/rlaope/circle"
+Source = "https://github.com/rlaope/circle"
+Issues = "https://github.com/rlaope/circle/issues"
+Changelog = "https://github.com/rlaope/circle/blob/init/CHANGELOG.md"
 
 [project.scripts]
 circlelib = "circlelib.cli:main"
