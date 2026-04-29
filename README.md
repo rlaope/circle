@@ -213,11 +213,17 @@ circlelib run examples/circles.crl --check
 ## Tests
 
 ```sh
-pytest
+pytest                  # unit tests
+bash scripts/verify.sh  # unit tests + headless smoke run of every example
 ```
 
 The suite covers grammar, AST equality, scope rules, module resolution
 (including circular-import detection), and transform composition.
+
+## Language reference
+
+A full spec of the `.crl` syntax — lexical tokens, grammar, scope
+rules, errors — lives in [docs/LANGUAGE.md](docs/LANGUAGE.md).
 
 ---
 

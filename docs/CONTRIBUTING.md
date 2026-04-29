@@ -1,6 +1,7 @@
 # Contributing to circlelib
 
 ## Before you start
+- Language reference (the `.crl` spec): [LANGUAGE.md](LANGUAGE.md)
 - Strategic context: [STRATEGY.md](STRATEGY.md)
 - Roadmap and priorities: [ROADMAP.md](ROADMAP.md)
 - Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
@@ -28,8 +29,10 @@ python -m circlelib run examples/circles.crl --check
 
 - Add tests next to your code change. Parser/evaluator changes need
   pytest cases; new primitives need at least one example `.crl`.
-- Run `pytest` and `python -m circlelib run examples/circles.crl --check`
-  before opening a PR.
+- If your change touches user-visible syntax or semantics, update
+  [LANGUAGE.md](LANGUAGE.md) **in the same commit**.
+- Before opening a PR, run `bash scripts/verify.sh` — it must exit 0.
+  This runs `pytest` plus a headless `--check` on every example.
 - One feature per PR. No drive-by refactors.
 - Code, comments, and identifiers are English. Commit messages are
   English. Korean only inside user-facing docs that are explicitly

@@ -11,6 +11,7 @@ a tree-walking evaluator, and a ModernGL renderer. See
 
 ## Where to look
 
+- **Language reference (source of truth for `.crl` syntax)** → [docs/LANGUAGE.md](docs/LANGUAGE.md)
 - **Strategy / market analysis** → [docs/STRATEGY.md](docs/STRATEGY.md)
 - **Roadmap / milestones / 90-day plan** → [docs/ROADMAP.md](docs/ROADMAP.md)
 - **Architecture / extension points** → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -18,6 +19,21 @@ a tree-walking evaluator, and a ModernGL renderer. See
 
 Read the relevant doc(s) before doing non-trivial work; do not infer
 context from this file alone.
+
+## Working on a roadmap issue (closure protocol)
+
+A roadmap issue is "done" only when **all** of these are true:
+
+1. `gh issue view <N> --repo rlaope/circle` — read scope + acceptance.
+2. Implement the change. New grammar / AST / primitive ships with at
+   least one parser test, one evaluator test, and one example `.crl`.
+3. **If the change touches user-visible syntax or semantics, update
+   [docs/LANGUAGE.md](docs/LANGUAGE.md) in the same commit.**
+4. Run `bash scripts/verify.sh` — it must exit 0.
+5. Commit with `feat:` / `fix:` / `docs:` prefix, body ends with
+   `Closes #<N>`. No `Co-Authored-By`, no Claude attribution.
+6. `git push origin main:init` (the protected default branch).
+7. `gh issue close <N> --comment "<short summary>"`.
 
 ## Working principles in this repo
 

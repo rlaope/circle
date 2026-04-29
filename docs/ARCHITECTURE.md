@@ -2,6 +2,7 @@
 
 > For a market and strategic view: see [STRATEGY.md](STRATEGY.md).
 > For the milestone task list: see [ROADMAP.md](ROADMAP.md).
+> For user-facing `.crl` syntax/semantics: see [LANGUAGE.md](LANGUAGE.md).
 
 This document explains how circlelib turns a `.crl` file into pixels and
 where to extend it. Read it once before opening a non-trivial PR.
