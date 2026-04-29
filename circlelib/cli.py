@@ -30,6 +30,7 @@ from pathlib import Path
 from circlelib import __version__
 from circlelib.runtime.evaluator import compile_program
 from circlelib.runtime.resolver import PackageNotInstalledError, load
+from circlelib.runtime.scaffold import list_templates as _list_scaffold_templates
 
 
 def _load_or_die(path: Path):
@@ -118,8 +119,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     new.add_argument("file", type=Path, help="output path (extension auto-added)")
     new.add_argument(
-        "--template", default="default",
-        help="template to use (default | anim | stdlib)",
+        "--template",
+        choices=_list_scaffold_templates(),
+        default="default",
+        help="template to use (auto-listed from circlelib.runtime.scaffold)",
     )
     new.add_argument(
         "--force", action="store_true",

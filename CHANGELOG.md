@@ -10,6 +10,15 @@ once it reaches 1.0.0.
 - Project metadata polish for v1.0 prep: PyPI classifiers, keywords,
   project URLs, this CHANGELOG, a stability policy doc
   (`docs/STABILITY.md`), and `circlelib new` scaffolder.
+- **Bug fix (behaviour change)**: `python -m circlelib` previously
+  swallowed the CLI's return code and always exited 0. It now calls
+  `sys.exit(main())` so non-zero exits from `run`/`record`/`export`/
+  `install`/`new` propagate to the shell. Scripts that depended on
+  the old always-zero behaviour (e.g. `circlelib run bad.crl &&
+  echo ok` printing "ok") will now see the correct exit code.
+- `circlelib new --template` validates against `argparse.choices`
+  (auto-derived from the shipped template list) so the help output
+  stays in sync as templates are added.
 
 ## [0.6.0] — 2026-04-29
 
