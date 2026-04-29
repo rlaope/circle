@@ -1,6 +1,6 @@
 """Command-line entry point for circlelib.
 
-Two subcommands:
+Subcommands:
 
   circlelib run path/to/scene.crl
       Loads the program, compiles it into a frame callable, and either
@@ -11,6 +11,14 @@ Two subcommands:
       Encodes an animated scene to MP4 by piping offscreen frames into
       ffmpeg. Falls back to a PNG sequence with `--png-fallback` when
       ffmpeg is missing.
+
+  circlelib export path/to/scene.crl --target=threejs --out=site/
+      Emits a Three.js viewer site for a static frame.
+
+  circlelib install <owner>/<repo>
+      Installs a third-party `.crl` package into the local cache so
+      it's importable via `@<owner>/<repo>/<sub>`. Sources: GitHub by
+      default, or a local directory with `--from <dir>`.
 """
 
 from __future__ import annotations
@@ -21,7 +29,18 @@ from pathlib import Path
 
 from circlelib import __version__
 from circlelib.runtime.evaluator import compile_program
-from circlelib.runtime.resolver import load
+from circlelib.runtime.resolver import PackageNotInstalledError, load
+
+
+def _load_or_die(path: Path):
+    """Wrap `load()` so missing-package errors print a one-line message
+    instead of a traceback. Other errors propagate (they usually indicate
+    a real bug or an actual file-not-found that the user should see)."""
+    try:
+        return load(path)
+    except PackageNotInstalledError as e:
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(5)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -88,13 +107,34 @@ def _build_parser() -> argparse.ArgumentParser:
         help="frame time used for the static export (default 0)",
     )
 
+    install = sub.add_parser(
+        "install",
+        help="install a third-party .crl package into the local cache",
+    )
+    install.add_argument(
+        "slug", nargs="?", default=None,
+        help="<owner>/<repo> identifier (e.g. 'rlaope/circle-extras')",
+    )
+    install.add_argument(
+        "--from", dest="src", type=Path, default=None, metavar="DIR",
+        help="install from a local directory instead of cloning from GitHub",
+    )
+    install.add_argument(
+        "--upgrade", action="store_true",
+        help="git pull on an existing install (no-op for --from)",
+    )
+    install.add_argument(
+        "--list", dest="do_list", action="store_true",
+        help="list installed packages and exit",
+    )
+
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     if args.command == "run":
-        program = load(args.file)
+        program = _load_or_die(args.file)
         scene = compile_program(program)
         # Initial node list at t=0 just for a quick "loaded N node(s)"
         # diagnostic; the window/PNG paths will (re-)evaluate frames.
@@ -124,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "record":
-        program = load(args.file)
+        program = _load_or_die(args.file)
         scene = compile_program(program)
         if not scene.is_animated and args.duration is None:
             print(
@@ -164,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "export":
-        program = load(args.file)
+        program = _load_or_die(args.file)
         scene = compile_program(program)
         if args.target == "threejs":
             from circlelib.exporters.threejs import export_threejs
@@ -177,6 +217,44 @@ def main(argv: list[str] | None = None) -> int:
                 f"`python -m http.server` to view)"
             )
             return 0
+
+    if args.command == "install":
+        from circlelib.runtime.installer import (
+            InstallError,
+            install_from_github,
+            install_from_local,
+            list_installed,
+            parse_slug,
+        )
+
+        if args.do_list:
+            any_pkg = False
+            for pkg in list_installed():
+                any_pkg = True
+                print(f"@{pkg.owner}/{pkg.repo}\t{pkg.path}")
+            if not any_pkg:
+                print("no packages installed")
+            return 0
+
+        if args.slug is None:
+            print(
+                "error: install requires '<owner>/<repo>' "
+                "(or use --list).",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            owner, repo = parse_slug(args.slug)
+            if args.src is not None:
+                pkg = install_from_local(owner, repo, args.src)
+                print(f"installed @{owner}/{repo} from {args.src} -> {pkg.path}")
+            else:
+                pkg = install_from_github(owner, repo, upgrade=args.upgrade)
+                print(f"installed @{owner}/{repo} -> {pkg.path}")
+        except InstallError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 4
+        return 0
 
     return 1
 

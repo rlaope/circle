@@ -125,6 +125,37 @@ import both freely. Inside the catalog, stdlib modules also use
 in `@stdlib/vehicles/wheels`), so the catalog is self-contained
 regardless of where it's installed.
 
+### 4.2 Third-party packages — `@<owner>/<repo>/...`
+
+Packages installed with `circlelib install` live in a local cache
+under `~/.circlelib/packages/<owner>/<repo>/` (or wherever
+`$CIRCLELIB_HOME` points). They are imported with the same `@`
+prefix syntax, distinguished from stdlib by their `<owner>` slug:
+
+```sh
+circlelib install rlaope/circle-extras
+circlelib install --from ./my-local-pkg me/pkg     # offline / dev
+circlelib install --list
+```
+
+```crl
+import "@rlaope/circle-extras/widgets/dial" as dial
+import "@me/pkg/widget"                     as w
+
+scene {
+    dial.Dial(position=(0, 0, 0))
+    w.Widget(position=(3, 0, 0))
+}
+```
+
+If a `@<owner>/<repo>/...` import refers to an uninstalled package the
+loader raises `PackageNotInstalledError` with the exact
+`circlelib install ...` command needed to fix it.
+
+`@stdlib/` and `@<owner>/<repo>/` use the same prefix character but
+go to different roots; the resolver picks the one matching the prefix
+and the two never collide.
+
 ---
 
 ## 5. Bindings
